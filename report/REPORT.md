@@ -41,28 +41,29 @@
 
 ### Domain & Lý Do Chọn
 
-**Domain:** [ví dụ: Customer support FAQ]
+**Domain:** Văn bản pháp luật (Dự thảo Luật Trí tuệ nhân tạo Việt Nam)
 
 **Tại sao nhóm chọn domain này?**
-> [Nhóm chọn domain này vì nó có nhiều văn bản cấu trúc rõ ràng, phù hợp để so sánh các chiến lược chunking và metadata filtering.]
+> Nhóm chọn domain này vì các văn bản luật có tính cấu trúc rất cao (chia theo Chương, Điều, Khoản) và từ khóa dễ bị lặp lại giữa các quy định. Đặc thù này khiến nó trở thành bộ dữ liệu tuyệt vời để thử nghiệm sự khác biệt giữa các chiến lược Chunking (cắt theo ký tự vs cắt theo Điều luật) và làm nổi bật sức mạnh của kỹ thuật Metadata Filtering (ví dụ lọc theo Chương hoặc Mức độ rủi ro) thay vì chỉ phụ thuộc vào Semantic Search thông thường.
 
 ### Data Inventory
 
 | # | Tên tài liệu | Nguồn | Số ký tự | Metadata đã gán |
 |---|--------------|-------|----------|-----------------|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| 1 | `luat_ai_chuong1.md` | Dự thảo Luật AI 2025 | ~10.600 | `{"category": "luat_ai", "chapter": 1}` |
+| 2 | `luat_ai_chuong2.md` | Dự thảo Luật AI 2025 | ~13.000 | `{"category": "luat_ai", "chapter": 2}` |
+| 3 | `luat_ai_chuong3.md` | Dự thảo Luật AI 2025 | ~7.200 | `{"category": "luat_ai", "chapter": 3}` |
+| 4 | `luat_ai_chuong4.md` | Dự thảo Luật AI 2025 | ~14.900 | `{"category": "luat_ai", "chapter": 4}` |
+| 5 | `luat_ai_chuong5.md` | Dự thảo Luật AI 2025 | ~3.700 | `{"category": "luat_ai", "chapter": 5}` |
+*(Lưu ý: Còn thêm Chương 6, 7, 8 trong thư mục data nhưng nhóm list 5 file đại diện)*
 
 ### Metadata Schema
 
 | Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho retrieval? |
 |----------------|------|---------------|-------------------------------|
-| source | string | "python_intro" | Giúp lọc theo nguồn tài liệu |
-| language | string | "vi" | Dùng để tìm câu trả lời phù hợp ngôn ngữ |
-| category | string | "productivity" | Hạn chế kết quả xuống domain liên quan |
+| category | string | "luat_ai" | Giúp phân biệt tài liệu luật với các tài liệu nội bộ, FAQ hay hướng dẫn kỹ thuật khác trong cùng một Vector Store lớn. |
+| chapter | int | 2 | Vô cùng hữu ích khi người dùng có truy vấn khoanh vùng chủ đề (vd: "Trong phần phân loại rủi ro..."), giúp lọc đi các kết quả gây nhiễu từ chương khác. |
+| rui_ro | string | "cao" | Cho phép filter chính xác quy định áp dụng cho từng đối tượng, vì từ khóa "trách nhiệm" có thể xuất hiện rải rác ở khắp văn bản. |
 
 ---
 
