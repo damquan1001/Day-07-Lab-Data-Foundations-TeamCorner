@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
+
+from dotenv import load_dotenv
+from google import genai
 
 import main
 from src.embeddings import _mock_embed
@@ -19,6 +23,11 @@ ROOT_DIR = Path(__file__).parent
 STATIC_DIR = ROOT_DIR / "static"
 LAW_METADATA_FILTER = {"document_type": "law", "language": "vi"}
 SUPPORTED_STRATEGIES = {"vector", "bm25", "hybrid"}
+
+load_dotenv(ROOT_DIR / ".env", override=False)
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+GEMINI_API_KEY = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
+GEMINI_CLIENT = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 
 def _law_file_path() -> Path:
@@ -35,6 +44,14 @@ def _law_file_path() -> Path:
 
 def get_preset_questions() -> list[str]:
     return list(main.LAW_BENCHMARK_QUERIES)
+
+
+def get_llm_status() -> dict:
+    return {
+        "provider": "gemini" if GEMINI_API_KEY else "retrieval-preview",
+        "model": GEMINI_MODEL if GEMINI_API_KEY else "",
+        "available": bool(GEMINI_API_KEY),
+    }
 
 
 def build_demo_store() -> tuple[EmbeddingStore, int]:
@@ -87,7 +104,62 @@ def _simple_answer(question: str, results: list[dict], strategy: str) -> str:
     )
 
 
-def search_demo(question: str, strategy: str = "hybrid", top_k: int = 3) -> dict:
+def _build_grounded_prompt(question: str, results: list[dict], strategy: str) -> str:
+    context_blocks = []
+    for index, result in enumerate(results, start=1):
+        metadata = result.get("metadata", {})
+        article = metadata.get("article", "Điều chưa rõ")
+        title = metadata.get("article_title", "")
+        chapter = metadata.get("chapter", "")
+        context_blocks.append(
+            "\n".join(
+                [
+                    f"[{index}] {article} - {title}".strip(),
+                    f"Chapter: {chapter}",
+                    f"Retrieval score: {float(result.get('score', 0.0)):.4f}",
+                    result.get("content", ""),
+                ]
+            )
+        )
+
+    return (
+        "Bạn là trợ lý tra cứu Luật Trí tuệ nhân tạo Việt Nam. "
+        "Chỉ trả lời dựa trên ngữ cảnh được cung cấp. "
+        "Nếu ngữ cảnh không đủ để kết luận, hãy nói rõ là chưa đủ căn cứ. "
+        "Trả lời bằng tiếng Việt, ngắn gọn, có nhắc Điều liên quan khi có thể.\n\n"
+        f"Chiến lược retrieval: {strategy}\n"
+        f"Câu hỏi: {question}\n\n"
+        "Ngữ cảnh retrieved:\n"
+        f"{'\n\n'.join(context_blocks)}\n\n"
+        "Câu trả lời:"
+    )
+
+
+def _gemini_answer(question: str, results: list[dict], strategy: str) -> tuple[str, str]:
+    if GEMINI_CLIENT is None:
+        return _simple_answer(question, results, strategy), "retrieval-preview"
+    if not results:
+        return _simple_answer(question, results, strategy), "retrieval-preview"
+
+    try:
+        response = GEMINI_CLIENT.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=_build_grounded_prompt(question, results, strategy),
+            config={
+                "temperature": 0.2,
+                "max_output_tokens": 512,
+            },
+        )
+        answer = (response.text or "").strip()
+        if answer:
+            return answer, f"gemini:{GEMINI_MODEL}"
+    except Exception as exc:
+        print(f"[chat-demo] Gemini fallback: {exc}", file=sys.stderr)
+
+    return _simple_answer(question, results, strategy), "retrieval-preview"
+
+
+def search_demo(question: str, strategy: str = "hybrid", top_k: int = 3, use_gemini: bool = False) -> dict:
     question = question.strip()
     strategy = strategy.lower().strip()
     if strategy not in SUPPORTED_STRATEGIES:
@@ -103,11 +175,18 @@ def search_demo(question: str, strategy: str = "hybrid", top_k: int = 3) -> dict
     else:
         raw_results = STORE.search_hybrid_with_filter(question, top_k=top_k, metadata_filter=LAW_METADATA_FILTER)
 
+    if use_gemini:
+        answer, answer_source = _gemini_answer(question, raw_results, strategy)
+    else:
+        answer = _simple_answer(question, raw_results, strategy)
+        answer_source = "retrieval-preview"
+
     return {
         "question": question,
         "strategy": strategy,
         "top_k": top_k,
-        "answer": _simple_answer(question, raw_results, strategy),
+        "answer": answer,
+        "answer_source": answer_source,
         "results": [_result_payload(result) for result in raw_results],
     }
 
@@ -132,6 +211,7 @@ class ChatDemoHandler(BaseHTTPRequestHandler):
                     "questions": get_preset_questions(),
                     "document_count": DOCUMENT_COUNT,
                     "strategies": sorted(SUPPORTED_STRATEGIES),
+                    "llm": get_llm_status(),
                 }
             )
             return
@@ -148,10 +228,11 @@ class ChatDemoHandler(BaseHTTPRequestHandler):
             payload = self._read_json()
             question = str(payload.get("question", ""))
             top_k = int(payload.get("top_k", 3))
+            use_gemini = bool(payload.get("use_gemini", False))
 
             if parsed.path == "/api/search":
                 strategy = str(payload.get("strategy", "hybrid"))
-                self._send_json(search_demo(question, strategy=strategy, top_k=top_k))
+                self._send_json(search_demo(question, strategy=strategy, top_k=top_k, use_gemini=use_gemini))
                 return
 
             if parsed.path == "/api/compare":

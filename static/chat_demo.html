@@ -3,20 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Law Retrieval Demo</title>
+  <title>AI Law Chat Live</title>
   <style>
     :root {
       color-scheme: light;
-      --ink: #1b1f24;
-      --muted: #68707c;
-      --line: #d7dde5;
-      --panel: #f6f8fb;
+      --ink: #20242c;
+      --muted: #697281;
+      --line: #d9e0ea;
+      --soft-line: #e9edf3;
       --surface: #ffffff;
-      --accent: #0f766e;
-      --accent-strong: #115e59;
+      --panel: #f7f9fc;
+      --sidebar: #162033;
+      --sidebar-soft: #22304a;
+      --teal: #0f766e;
+      --teal-strong: #115e59;
       --blue: #2563eb;
       --amber: #b45309;
-      --shadow: 0 8px 26px rgba(15, 23, 42, 0.10);
+      --green-soft: #e8f7f3;
+      --blue-soft: #edf4ff;
+      --amber-soft: #fff6df;
+      --shadow: 0 16px 42px rgba(23, 32, 51, 0.12);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -28,43 +34,81 @@
       margin: 0;
       min-height: 100vh;
       color: var(--ink);
-      background: #eef2f6;
+      background: #edf1f6;
+      letter-spacing: 0;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
     }
 
     .app {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 320px minmax(0, 1fr);
+      grid-template-columns: 318px minmax(0, 1fr);
     }
 
     aside {
-      background: #172033;
+      min-height: 100vh;
+      background: var(--sidebar);
       color: #f8fafc;
       padding: 18px;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr);
       gap: 18px;
-      border-right: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .brand h1 {
       margin: 0;
-      font-size: 20px;
-      line-height: 1.25;
-      font-weight: 750;
+      font-size: 21px;
+      line-height: 1.2;
+      font-weight: 760;
     }
 
     .brand p {
-      margin: 0;
-      color: #b9c4d4;
+      margin: 8px 0 0;
+      color: #b8c3d3;
       font-size: 13px;
       line-height: 1.45;
+    }
+
+    .metric-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .metric {
+      min-height: 58px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .metric span {
+      color: #c7d2e2;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .metric strong {
+      color: #ffffff;
+      font-size: 18px;
+    }
+
+    .control-panel {
+      display: grid;
+      gap: 14px;
     }
 
     .control-group {
@@ -72,202 +116,284 @@
       gap: 8px;
     }
 
-    label {
-      font-size: 12px;
+    label,
+    .label {
       color: #cbd5e1;
-      font-weight: 650;
-      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 680;
     }
 
-    select,
-    input {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: var(--surface);
-      color: var(--ink);
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .segmented.compact {
+      grid-template-columns: repeat(3, 1fr);
+      max-width: 180px;
+    }
+
+    .segmented button {
+      min-height: 34px;
+      border: 0;
       border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 14px;
-      outline: none;
+      color: #dbe5f2;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 720;
     }
 
-    select:focus,
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+    .segmented button.active {
+      background: #ffffff;
+      color: var(--sidebar);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+    }
+
+    .toggle-row {
+      min-height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .toggle-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--teal);
+    }
+
+    .toggle-row span {
+      color: #ecf3fb;
+      font-size: 13px;
+      font-weight: 650;
     }
 
     .presets {
+      min-height: 0;
+      overflow: auto;
       display: grid;
       gap: 8px;
-      overflow: auto;
       padding-right: 2px;
     }
 
     .preset {
-      border: 1px solid rgba(255,255,255,0.12);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: #e8eef8;
-      background: rgba(255,255,255,0.06);
-      border-radius: 6px;
-      padding: 10px;
+      background: rgba(255, 255, 255, 0.055);
+      border-radius: 8px;
+      padding: 10px 11px;
       text-align: left;
       font-size: 13px;
-      line-height: 1.35;
-      cursor: pointer;
+      line-height: 1.38;
     }
 
-    .preset:hover {
-      background: rgba(255,255,255,0.12);
+    .preset:hover,
+    .preset:focus {
+      background: rgba(255, 255, 255, 0.12);
+      outline: none;
     }
 
     main {
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr) auto;
       min-width: 0;
       min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
     .topbar {
-      background: var(--surface);
+      min-height: 72px;
+      background: rgba(255, 255, 255, 0.94);
       border-bottom: 1px solid var(--line);
-      padding: 14px 18px;
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 18px;
     }
 
-    .topbar strong {
-      font-size: 15px;
+    .topbar-title {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
     }
 
-    .status {
+    .topbar-title strong {
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .topbar-title span {
       color: var(--muted);
       font-size: 13px;
     }
 
+    .status-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .chip.good {
+      background: var(--green-soft);
+      border-color: #bde7d9;
+      color: var(--teal-strong);
+    }
+
+    .chip.blue {
+      background: var(--blue-soft);
+      border-color: #c9dbff;
+      color: var(--blue);
+    }
+
     .chat {
-      padding: 18px;
+      min-height: 0;
       overflow: auto;
+      padding: 22px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
 
     .message {
-      max-width: 960px;
-      border-radius: 8px;
-      padding: 14px;
-      box-shadow: var(--shadow);
-      background: var(--surface);
+      width: min(100%, 1040px);
       border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
     }
 
     .message.user {
       align-self: flex-end;
-      background: #e8f3ff;
-      border-color: #b8d8ff;
+      width: min(100%, 760px);
+      background: #eaf3ff;
+      border-color: #c6dbff;
       box-shadow: none;
-      max-width: 760px;
+      padding: 13px 15px;
+      line-height: 1.5;
     }
 
-    .meta {
+    .message-head {
+      min-height: 46px;
+      border-bottom: 1px solid var(--soft-line);
+      padding: 11px 14px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
-      margin-bottom: 10px;
-      color: var(--muted);
-      font-size: 12px;
+      justify-content: space-between;
+      gap: 12px;
     }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 12px;
-      background: #eef6f5;
-      color: var(--accent-strong);
-      border: 1px solid #c7e2df;
+    .message-head strong {
+      font-size: 14px;
+    }
+
+    .message-body {
+      padding: 14px;
+      display: grid;
+      gap: 14px;
     }
 
     .answer {
-      margin: 0 0 12px;
-      line-height: 1.55;
-      font-size: 14px;
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.62;
     }
 
     .results {
       display: grid;
-      gap: 8px;
-    }
-
-    details {
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
+      border: 1px solid var(--soft-line);
+      border-radius: 8px;
       overflow: hidden;
     }
 
-    summary {
-      cursor: pointer;
-      padding: 10px 12px;
-      font-weight: 650;
-      font-size: 13px;
+    .result {
+      display: grid;
+      grid-template-columns: minmax(120px, 190px) minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      background: var(--surface);
+      border-top: 1px solid var(--soft-line);
     }
 
-    .result-body {
-      border-top: 1px solid var(--line);
-      padding: 10px 12px;
-      color: #2f3743;
-      line-height: 1.5;
-      font-size: 13px;
+    .result:first-child {
+      border-top: 0;
     }
 
-    .score-row {
+    .result-id {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+    }
+
+    .result-id strong {
+      font-size: 14px;
+    }
+
+    .result-id span,
+    .result-text {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .score-line {
+      height: 8px;
+      border-radius: 999px;
+      background: #e6ebf2;
+      overflow: hidden;
+    }
+
+    .score-line span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--teal), var(--blue));
+    }
+
+    .score-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 8px;
-      color: var(--muted);
-      font-size: 12px;
+      gap: 6px;
+      margin-top: 8px;
     }
 
-    .composer {
-      background: var(--surface);
-      border-top: 1px solid var(--line);
-      padding: 14px 18px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 10px;
+    .tag {
+      display: inline-flex;
+      min-height: 24px;
       align-items: center;
-    }
-
-    button.primary,
-    button.secondary {
-      border: 0;
-      border-radius: 6px;
-      padding: 10px 14px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    button.primary {
-      background: var(--accent);
-      color: white;
-    }
-
-    button.primary:hover {
-      background: var(--accent-strong);
-    }
-
-    button.secondary {
-      background: #eff4fa;
-      color: #233044;
-      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--soft-line);
+      color: var(--muted);
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 650;
     }
 
     .comparison {
@@ -277,39 +403,110 @@
     }
 
     .compare-card {
+      min-height: 146px;
       border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 10px;
+      border-radius: 8px;
       background: var(--panel);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
     }
 
     .compare-card h3 {
-      margin: 0 0 8px;
+      margin: 0;
+      color: var(--teal-strong);
       font-size: 13px;
-      color: var(--accent-strong);
       text-transform: uppercase;
     }
 
     .compare-card p {
       margin: 0;
+      color: #343c48;
       font-size: 13px;
-      line-height: 1.4;
+      line-height: 1.42;
     }
 
-    @media (max-width: 860px) {
+    .composer {
+      min-height: 74px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.96);
+      padding: 14px 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .composer input {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--ink);
+      background: #ffffff;
+      outline: none;
+    }
+
+    .composer input:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+    }
+
+    .button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 15px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      color: #ffffff;
+      background: var(--teal);
+    }
+
+    .button.primary:hover {
+      background: var(--teal-strong);
+    }
+
+    .button.secondary {
+      color: #253044;
+      background: #eef3f8;
+      border: 1px solid var(--line);
+    }
+
+    @media (max-width: 920px) {
       .app {
         grid-template-columns: 1fr;
       }
 
       aside {
-        max-height: 42vh;
+        min-height: auto;
+        max-height: 46vh;
       }
 
+      .topbar,
       .composer {
         grid-template-columns: 1fr;
       }
 
-      .comparison {
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .status-row {
+        justify-content: flex-start;
+      }
+
+      .composer {
+        display: grid;
+      }
+
+      .comparison,
+      .result {
         grid-template-columns: 1fr;
       }
     }
@@ -319,46 +516,71 @@
   <div class="app">
     <aside>
       <div class="brand">
-        <h1>AI Law Retrieval Demo</h1>
-        <p>Compare Vector, BM25, and Hybrid retrieval on the Vietnamese AI law document.</p>
+        <h1>AI Law Chat Live</h1>
+        <p>Ask the law corpus with Vector, BM25, or Hybrid retrieval, then let Gemini answer from the retrieved sources.</p>
+      </div>
+
+      <div class="metric-stack">
+        <div class="metric">
+          <span>Articles</span>
+          <strong id="docCount">--</strong>
+        </div>
+        <div class="metric">
+          <span>Answer engine</span>
+          <strong id="engineState">Local</strong>
+        </div>
+      </div>
+
+      <div class="control-panel">
+        <div class="control-group">
+          <div class="label">Strategy</div>
+          <div class="segmented" id="strategyGroup">
+            <button type="button" data-value="hybrid" class="active">Hybrid</button>
+            <button type="button" data-value="bm25">BM25</button>
+            <button type="button" data-value="vector">Vector</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="topK">Top K</label>
+          <div class="segmented compact" id="topKGroup">
+            <button type="button" data-value="1">1</button>
+            <button type="button" data-value="3" class="active">3</button>
+            <button type="button" data-value="5">5</button>
+          </div>
+        </div>
+
+        <label class="toggle-row" for="geminiToggle">
+          <span id="geminiToggleLabel">Gemini answer</span>
+          <input id="geminiToggle" type="checkbox">
+        </label>
       </div>
 
       <div class="control-group">
-        <label for="strategy">Strategy</label>
-        <select id="strategy">
-          <option value="hybrid">Hybrid BM25 + Vector</option>
-          <option value="bm25">BM25</option>
-          <option value="vector">Vector</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label for="topK">Top K</label>
-        <select id="topK">
-          <option value="1">1</option>
-          <option value="3" selected>3</option>
-          <option value="5">5</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label>Preset Questions</label>
+        <div class="label">Preset Questions</div>
         <div id="presets" class="presets"></div>
       </div>
     </aside>
 
     <main>
       <div class="topbar">
-        <strong>Retrieval Strategy Chat</strong>
-        <span id="status" class="status">Loading law data...</span>
+        <div class="topbar-title">
+          <strong>Live Retrieval Chat</strong>
+          <span id="status">Loading law data...</span>
+        </div>
+        <div class="status-row">
+          <span id="strategyChip" class="chip good">Hybrid</span>
+          <span id="llmChip" class="chip">Retrieval preview</span>
+          <span class="chip blue">TeamCorner</span>
+        </div>
       </div>
 
       <section id="chat" class="chat" aria-live="polite"></section>
 
       <form id="composer" class="composer">
         <input id="question" name="question" autocomplete="off" placeholder="Nhập câu hỏi về Luật Trí tuệ nhân tạo...">
-        <button class="secondary" type="button" id="compare">Compare all</button>
-        <button class="primary" type="submit">Send</button>
+        <button class="button secondary" type="button" id="compare">Compare</button>
+        <button class="button primary" type="submit">Search</button>
       </form>
     </main>
   </div>
@@ -368,10 +590,22 @@
     const presets = document.querySelector("#presets");
     const statusText = document.querySelector("#status");
     const questionInput = document.querySelector("#question");
-    const strategySelect = document.querySelector("#strategy");
-    const topKSelect = document.querySelector("#topK");
-    const composer = document.querySelector("#composer");
     const compareButton = document.querySelector("#compare");
+    const composer = document.querySelector("#composer");
+    const docCount = document.querySelector("#docCount");
+    const engineState = document.querySelector("#engineState");
+    const llmChip = document.querySelector("#llmChip");
+    const strategyChip = document.querySelector("#strategyChip");
+    const geminiToggle = document.querySelector("#geminiToggle");
+    const geminiToggleLabel = document.querySelector("#geminiToggleLabel");
+    const strategyGroup = document.querySelector("#strategyGroup");
+    const topKGroup = document.querySelector("#topKGroup");
+
+    const state = {
+      strategy: "hybrid",
+      topK: 3,
+      geminiAvailable: false
+    };
 
     function escapeHtml(value) {
       return String(value)
@@ -382,6 +616,21 @@
         .replaceAll("'", "&#039;");
     }
 
+    function setSegment(group, value, targetKey) {
+      state[targetKey] = targetKey === "topK" ? Number(value) : value;
+      group.querySelectorAll("button").forEach(button => {
+        button.classList.toggle("active", button.dataset.value === String(value));
+      });
+      if (targetKey === "strategy") {
+        strategyChip.textContent = value.toUpperCase();
+      }
+    }
+
+    function sourceLabel(source) {
+      if (source && source.startsWith("gemini:")) return source.replace("gemini:", "Gemini ");
+      return "Retrieval preview";
+    }
+
     function addUserMessage(question) {
       const node = document.createElement("article");
       node.className = "message user";
@@ -390,20 +639,26 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    function resultDetails(result, index) {
-      const scoreBits = [
-        `score ${result.score}`
-      ];
-      if (result.bm25_score !== undefined) scoreBits.push(`bm25 ${result.bm25_score}`);
-      if (result.vector_score !== undefined) scoreBits.push(`vector ${result.vector_score}`);
+    function scoreWidth(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return 0;
+      return Math.max(6, Math.min(100, number * 100));
+    }
+
+    function resultRow(result, index) {
+      const scoreTags = [`score ${result.score}`];
+      if (result.bm25_score !== undefined) scoreTags.push(`bm25 ${result.bm25_score}`);
+      if (result.vector_score !== undefined) scoreTags.push(`vector ${result.vector_score}`);
       return `
-        <details ${index === 0 ? "open" : ""}>
-          <summary>${escapeHtml(result.article)} - ${escapeHtml(result.title || "Untitled")}</summary>
-          <div class="result-body">
-            <div class="score-row">${scoreBits.map(bit => `<span>${escapeHtml(bit)}</span>`).join("")}</div>
-            <div>${escapeHtml(result.preview)}</div>
+        <div class="result">
+          <div class="result-id">
+            <strong>${escapeHtml(result.article || `Result ${index + 1}`)}</strong>
+            <span>${escapeHtml(result.title || "Untitled")}</span>
+            <div class="score-line"><span style="width: ${scoreWidth(result.score)}%"></span></div>
+            <div class="score-meta">${scoreTags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
           </div>
-        </details>
+          <div class="result-text">${escapeHtml(result.preview)}</div>
+        </div>
       `;
     }
 
@@ -411,12 +666,16 @@
       const node = document.createElement("article");
       node.className = "message";
       node.innerHTML = `
-        <div class="meta">
-          <span class="pill">${escapeHtml(payload.strategy)}</span>
-          <span>top_k=${escapeHtml(payload.top_k)}</span>
+        <div class="message-head">
+          <strong>${escapeHtml(payload.strategy.toUpperCase())}</strong>
+          <span class="chip ${payload.answer_source && payload.answer_source.startsWith("gemini:") ? "good" : ""}">
+            ${escapeHtml(sourceLabel(payload.answer_source))}
+          </span>
         </div>
-        <p class="answer">${escapeHtml(payload.answer)}</p>
-        <div class="results">${payload.results.map(resultDetails).join("")}</div>
+        <div class="message-body">
+          <p class="answer">${escapeHtml(payload.answer)}</p>
+          <div class="results">${payload.results.map(resultRow).join("")}</div>
+        </div>
       `;
       chat.appendChild(node);
       chat.scrollTop = chat.scrollHeight;
@@ -437,8 +696,13 @@
         `;
       }).join("");
       node.innerHTML = `
-        <div class="meta"><span class="pill">comparison</span><span>top_k=${escapeHtml(payload.top_k)}</span></div>
-        <div class="comparison">${cards}</div>
+        <div class="message-head">
+          <strong>Strategy comparison</strong>
+          <span class="chip">top_k=${escapeHtml(payload.top_k)}</span>
+        </div>
+        <div class="message-body">
+          <div class="comparison">${cards}</div>
+        </div>
       `;
       chat.appendChild(node);
       chat.scrollTop = chat.scrollHeight;
@@ -460,12 +724,13 @@
       if (!trimmed) return;
       addUserMessage(trimmed);
       questionInput.value = "";
-      statusText.textContent = compare ? "Comparing strategies..." : "Searching...";
+      statusText.textContent = compare ? "Comparing strategies..." : "Retrieving context...";
       try {
         const payload = {
           question: trimmed,
-          strategy: strategySelect.value,
-          top_k: Number(topKSelect.value)
+          strategy: state.strategy,
+          top_k: state.topK,
+          use_gemini: geminiToggle.checked && state.geminiAvailable
         };
         if (compare) {
           addCompareMessage(await postJson("/api/compare", payload));
@@ -481,6 +746,14 @@
     async function loadQuestions() {
       const response = await fetch("/api/questions");
       const data = await response.json();
+      state.geminiAvailable = Boolean(data.llm && data.llm.available);
+      docCount.textContent = data.document_count;
+      engineState.textContent = state.geminiAvailable ? "Gemini" : "Local";
+      llmChip.textContent = state.geminiAvailable ? data.llm.model : "Retrieval preview";
+      llmChip.classList.toggle("good", state.geminiAvailable);
+      geminiToggle.checked = state.geminiAvailable;
+      geminiToggle.disabled = !state.geminiAvailable;
+      geminiToggleLabel.textContent = state.geminiAvailable ? "Gemini answer" : "Gemini unavailable";
       statusText.textContent = `${data.document_count} article chunks loaded`;
       presets.innerHTML = "";
       data.questions.forEach(question => {
@@ -491,10 +764,18 @@
         button.addEventListener("click", () => submitQuestion(question));
         presets.appendChild(button);
       });
-      if (data.questions[0]) {
-        questionInput.value = data.questions[0];
-      }
+      if (data.questions[0]) questionInput.value = data.questions[0];
     }
+
+    strategyGroup.addEventListener("click", event => {
+      const button = event.target.closest("button[data-value]");
+      if (button) setSegment(strategyGroup, button.dataset.value, "strategy");
+    });
+
+    topKGroup.addEventListener("click", event => {
+      const button = event.target.closest("button[data-value]");
+      if (button) setSegment(topKGroup, button.dataset.value, "topK");
+    });
 
     composer.addEventListener("submit", event => {
       event.preventDefault();
