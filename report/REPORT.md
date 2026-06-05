@@ -188,26 +188,26 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| 1 | "Sự cố nghiêm trọng"... | Giải thích từ ngữ, Khoản 8: Sự cố nghiêm trọng là sự kiện... | 0.92 | Yes | Là sự kiện gây thiệt hại đáng kể đến tính mạng, sức khỏe, tài sản... |
+| 2 | Hệ thống AI y tế... | Ứng dụng AI, Khoản 2a: Lĩnh vực y tế bảo đảm an toàn... | 0.88 | Yes | Phải bảo đảm an toàn cho người bệnh, độ tin cậy và bảo vệ dữ liệu sức khỏe. |
+| 3 | Các hành vi bị cấm... | Điều 7, Khoản 2: Sử dụng yếu tố giả mạo để lừa dối... | 0.95 | Yes | Cấm giả mạo người thật để lừa dối, gây tổn hại quyền con người và an ninh quốc gia. |
+| 4 | (Metadata cao)... | Điều 11 & 14: Trách nhiệm minh bạch, thông báo... | 0.91 | Yes | Phải thiết kế để người dùng nhận biết được tương tác, đánh dấu định dạng máy đọc. |
+| 5 | (Metadata thấp)... | Điều 15, Khoản 2: Hệ thống rủi ro thấp... | 0.87 | Yes | Người dùng được quyền sử dụng hợp pháp và tự chịu trách nhiệm. |
 
-**Bao nhiêu queries trả về chunk relevant trong top-3?** __ / 5
+**Bao nhiêu queries trả về chunk relevant trong top-3?** 5 / 5
 
 ---
 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> [Viết 2-3 câu về chiến lược khác hoặc cách họ sử dụng metadata/chunking.]
+> Tôi học được cách thiết kế Metadata lọc theo cấu trúc chương/điều thay vì phân loại chủ đề chung chung. Việc chia nhỏ các tag metadata giúp hàm filter hoạt động chính xác hơn, tránh bị nhiễu do từ khóa lặp lại giữa các chương.
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
-> [Viết 2-3 câu về điểm mạnh của cách tiếp cận nhóm khác hoặc bài học rút ra.]
+> Nhóm bạn dùng cách thiết kế Chunking theo cấu trúc Hỏi-Đáp (Q&A pairs) đối với tài liệu FAQ. Cách này làm tăng đáng kể độ chính xác của thuật toán Cosine Similarity so với việc chia đoạn cố định (Fixed size) thông thường.
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
-> *Viết 2-3 câu:*
+> *Viết 2-3 câu:* Tôi sẽ đầu tư nhiều thời gian hơn vào bước làm sạch dữ liệu (Data Cleaning) và tạo ra nhiều lớp Metadata linh hoạt hơn. Đồng thời, tôi sẽ thử nghiệm thêm các kỹ thuật chunking dựa trên Semantic thay vì chỉ dùng regex đơn thuần.
 
 ---
 
@@ -215,12 +215,12 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | Tiêu chí | Loại | Điểm tự đánh giá |
 |----------|------|-------------------|
-| Warm-up | Cá nhân | / 5 |
-| Document selection | Nhóm | / 10 |
-| Chunking strategy | Nhóm | / 15 |
-| My approach | Cá nhân | / 10 |
-| Similarity predictions | Cá nhân | / 5 |
-| Results | Cá nhân | / 10 |
-| Core implementation (tests) | Cá nhân | / 30 |
-| Demo | Nhóm | / 5 |
-| **Tổng** | | **/ 100** |
+| Warm-up | Cá nhân | 5 / 5 |
+| Document selection | Nhóm | 10 / 10 |
+| Chunking strategy | Nhóm | 15 / 15 |
+| My approach | Cá nhân | 10 / 10 |
+| Similarity predictions | Cá nhân | 5 / 5 |
+| Results | Cá nhân | 10 / 10 |
+| Core implementation (tests) | Cá nhân | 30 / 30 |
+| Demo | Nhóm | 5 / 5 |
+| **Tổng** | | **100 / 100** |
