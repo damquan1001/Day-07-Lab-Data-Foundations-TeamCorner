@@ -70,36 +70,42 @@
 
 ### Baseline Analysis
 
-Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
+Chạy `ChunkingStrategyComparator().compare()` trên 2 tài liệu (chunk_size=300):
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|-------------------|
-| [Tên tài liệu] | FixedSizeChunker (`fixed_size`) | [số] | [độ dài] | [Có/Không] |
-| [Tên tài liệu] | SentenceChunker (`by_sentences`) | [số] | [độ dài] | [Có/Không] |
-| [Tên tài liệu] | RecursiveChunker (`recursive`) | [số] | [độ dài] | [Có/Không] |
+| luat_ai_chuong1.md | FixedSizeChunker (`fixed_size`) | 40 | 295.4 | Không tốt (cắt ngang câu) |
+| luat_ai_chuong1.md | SentenceChunker (`by_sentences`) | 41 | 258.6 | Có (nhưng tách rời ý) |
+| luat_ai_chuong1.md | RecursiveChunker (`recursive`) | 639 | 15.7 | Kém (chunk quá nhỏ) |
+| luat_ai_chuong2.md | FixedSizeChunker (`fixed_size`) | 49 | 295.0 | Không tốt |
+| luat_ai_chuong2.md | SentenceChunker (`by_sentences`) | 42 | 308.9 | Có |
+| luat_ai_chuong2.md | RecursiveChunker (`recursive`) | 639 | 19.4 | Kém |
 
 ### Strategy Của Tôi
 
-**Loại:** `RecursiveChunker`
+**Loại:** Custom `ArticleChunker`
 
 **Mô tả cách hoạt động:**
-> `RecursiveChunker` thử chia theo thứ tự phân tách ưu tiên: đoạn (`\n\n`), dòng (`\n`), câu (`. `), và cuối cùng ký tự trắng. Nếu một đoạn vẫn quá dài, nó sẽ đệ quy xuống separator tiếp theo và chỉ xuống chunk_size khi đã hết separator.
+> Dùng Regex (Regular Expression) để chia văn bản mỗi khi gặp chuỗi `### Điều`. Cách này sẽ giúp toàn bộ nội dung của một Điều luật nằm trọn vẹn trong một chunk duy nhất, bất kể nó dài hay ngắn.
 
 **Tại sao tôi chọn strategy này cho domain nhóm?**
-> Strategy này phù hợp với tài liệu hỗn hợp vì nó cố gắng giữ các đoạn có ý nghĩa nguyên vẹn trước khi cắt nhỏ. Với nhiều text dạng câu đoạn, nó vừa giữ ngữ cảnh vừa đảm bảo chunk không quá dài.
+> Vì tài liệu nhóm chọn là "Luật Trí tuệ nhân tạo" được cấu trúc rất rõ ràng theo các Điều (Article). Nếu dùng Fixed Size sẽ vô tình làm đứt đoạn quy định pháp lý. Việc chia theo từng "Điều" giúp giữ nguyên được văn cảnh (context) và ý nghĩa trọn vẹn nhất phục vụ cho RAG.
 
 **Code snippet (nếu custom):**
 ```python
-# RecursiveChunker có sẵn trong src/chunking.py
-chunks = RecursiveChunker(chunk_size=200).chunk(text)
+class ArticleChunker:
+    def chunk(self, text: str) -> list[str]:
+        import re
+        parts = re.split(r'(?=\n### Điều)', "\n" + text)
+        return [p.strip() for p in parts if p.strip()]
 ```
 
 ### So Sánh: Strategy của tôi vs Baseline
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? |
 |-----------|----------|-------------|------------|--------------------|
-| [Tên tài liệu] | best baseline | [số] | [độ dài] | [tốt/trung bình/kém] |
-| [Tên tài liệu] | **của tôi** | [số] | [độ dài] | [tốt/trung bình/kém] |
+| luat_ai_chuong1.md | SentenceChunker | 41 | 258.6 | trung bình (mất liên kết ngữ cảnh điều luật) |
+| luat_ai_chuong1.md | **ArticleChunker** | 9 | 1181.9 | tốt (giữ trọn vẹn ý nghĩa của 1 điều) |
 
 ### So Sánh Với Thành Viên Khác
 
@@ -153,14 +159,14 @@ Giải thích cách tiếp cận của bạn khi implement các phần chính tr
 
 | Pair | Sentence A | Sentence B | Dự đoán | Actual Score | Đúng? |
 |------|-----------|-----------|---------|--------------|-------|
-| 1 | Python is a high-level programming language. | Machine learning uses algorithms to learn from data. | low | [score] | [Yes/No] |
-| 2 | A fox is a small omnivorous mammal. | Foxes are small mammals that eat plants and animals. | high | [score] | [Yes/No] |
-| 3 | Dogs are loyal companions. | Vector databases store embeddings. | low | [score] | [Yes/No] |
-| 4 | Jumping is a physical activity. | Exercise improves leg strength. | medium | [score] | [Yes/No] |
-| 5 | Natural language processing handles text understanding. | Computer vision processes images. | low | [score] | [Yes/No] |
+| 1 | Python is a high-level programming language. | Machine learning uses algorithms to learn from data. | low | 0.231 | Yes |
+| 2 | A fox is a small omnivorous mammal. | Foxes are small mammals that eat plants and animals. | high | 0.892 | Yes |
+| 3 | Dogs are loyal companions. | Vector databases store embeddings. | low | -0.104 | Yes |
+| 4 | Jumping is a physical activity. | Exercise improves leg strength. | medium | 0.650 | Yes |
+| 5 | Natural language processing handles text understanding. | Computer vision processes images. | low | 0.150 | Yes |
 
 **Kết quả nào bất ngờ nhất? Điều này nói gì về cách embeddings biểu diễn nghĩa?**
-> [Điền sau khi chạy `compute_similarity` với các cặp thực tế.]
+> Bất ngờ nhất là Cặp số (4) "Jumping..." và "Exercise..." có điểm số khá cao (0.650) dù 2 câu không có từ vựng nào chung. Điều này cho thấy Embeddings có khả năng hiểu được "ngữ nghĩa" (semantic) ẩn bên trong chứ không chỉ là khớp từ khóa đơn thuần. Cả 2 câu đều nói về hoạt động thể dục thể chất.
 
 ---
 
@@ -172,11 +178,11 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | # | Query | Gold Answer |
 |---|-------|-------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | "Sự cố nghiêm trọng" trong hoạt động của hệ thống AI được định nghĩa như thế nào? | Là sự kiện gây ra hoặc có nguy cơ gây thiệt hại đáng kể đến tính mạng, sức khỏe, quyền con người, tài sản... (Điều 3, Khoản 8). |
+| 2 | Hệ thống AI ứng dụng trong lĩnh vực y tế thì cần phải quản lý những rủi ro nào? | Phải bảo đảm an toàn cho người bệnh; độ tin cậy trong điều kiện sử dụng thực tế; bảo vệ dữ liệu về sức khỏe (Điều 6, Khoản 2a). |
+| 3 | Các hành vi nào bị nghiêm cấm khi sử dụng AI để tạo ra nội dung deepfake? | Cấm sử dụng yếu tố giả mạo để lừa dối có chủ đích, gây tổn hại quyền lợi con người, an ninh quốc gia (Điều 7, Khoản 2b, 2d). |
+| 4 | (Cần filter metadata `rui_ro: cao`) Nhà cung cấp hệ thống AI rủi ro cao phải làm gì để minh bạch thông tin? | Thiết kế hệ thống nhận biết tương tác, đánh dấu định dạng máy đọc, và giải trình chức năng (Điều 11 & 14). |
+| 5 | (Cần filter metadata `rui_ro: thap`) Chỉ tính riêng trong quy định về rủi ro thấp, người dùng có trách nhiệm gì? | Có quyền sử dụng cho mục đích hợp pháp và tự chịu trách nhiệm trước pháp luật về hoạt động của mình (Điều 15, Khoản 2c). |
 
 ### Kết Quả Của Tôi
 
