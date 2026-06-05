@@ -1,8 +1,8 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
-**Nhóm:** [Tên nhóm]
-**Ngày:** [Ngày nộp]
+**Họ tên:** Nguyễn Tiến Đạt (ntddatj)
+**Nhóm:** TeamCorner
+**Ngày:** 05/06/2026
 
 ---
 
@@ -43,27 +43,31 @@
 
 ### Domain & Lý Do Chọn
 
-**Domain:** Hệ thống RAG và Nền Tảng Lập Trình Python/Vector Store cho Trợ lý Tri thức Nội bộ.
+**Domain:** Luật Trí tuệ nhân tạo (Luật AI) Việt Nam.
 
 **Tại sao nhóm chọn domain này?**
-> Nhóm chọn domain này để xây dựng một trợ lý tri thức phục vụ cho các lập trình viên mới gia nhập dự án và các nhân viên hỗ trợ khách hàng. Dữ liệu này giúp cung cấp các kiến thức căn bản về lập trình Python, thiết kế hệ thống RAG, lưu trữ Vector Store và quy trình xử lý lỗi để hỗ trợ người dùng nhanh chóng.
+> Nhóm chọn domain này nhằm xây dựng một trợ lý pháp lý hỗ trợ tra cứu Luật Trí tuệ nhân tạo của Việt Nam. Hệ thống sẽ giúp người dùng nhanh chóng tìm kiếm và hiểu rõ các quy định pháp luật về nghiên cứu, phát triển, cung cấp, phân loại rủi ro và các trách nhiệm đạo đức liên quan đến hoạt động trí tuệ nhân tạo.
 
 ### Data Inventory
 
 | # | Tên tài liệu | Nguồn | Số ký tự | Metadata đã gán |
 |---|--------------|-------|----------|-----------------|
-| 1 | customer_support_playbook.txt | Tài liệu quy trình hỗ trợ nội bộ | 1703 | `{"department": "support", "lang": "en"}` |
-| 2 | python_intro.txt | Tài liệu giới thiệu ngôn ngữ Python | 1953 | `{"department": "engineering", "lang": "en"}` |
-| 3 | rag_system_design.md | Tài liệu thiết kế hệ thống RAG nội bộ | 2416 | `{"department": "engineering", "lang": "en"}` |
-| 4 | vector_store_notes.md | Tài liệu ghi chú thiết kế Vector Store | 2149 | `{"department": "engineering", "lang": "en"}` |
-| 5 | vi_retrieval_notes.md | Tài liệu tiếng Việt về Retrieval trợ lý | 2188 | `{"department": "engineering", "lang": "vi"}` |
+| 1 | luat_ai_chuong1.md | Luật Trí tuệ nhân tạo 2025 | 10645 | `{"department": "general", "lang": "vi", "chapter": "1"}` |
+| 2 | luat_ai_chuong2.md | Luật Trí tuệ nhân tạo 2025 | 13013 | `{"department": "general", "lang": "vi", "chapter": "2"}` |
+| 3 | luat_ai_chuong3.md | Luật Trí tuệ nhân tạo 2025 | 7267 | `{"department": "general", "lang": "vi", "chapter": "3"}` |
+| 4 | luat_ai_chuong4.md | Luật Trí tuệ nhân tạo 2025 | 14976 | `{"department": "general", "lang": "vi", "chapter": "4"}` |
+| 5 | luat_ai_chuong5.md | Luật Trí tuệ nhân tạo 2025 | 3702 | `{"department": "legal", "lang": "vi", "chapter": "5"}` |
+| 6 | luat_ai_chuong6.md | Luật Trí tuệ nhân tạo 2025 | 3250 | `{"department": "legal", "lang": "vi", "chapter": "6"}` |
+| 7 | luat_ai_chuong7.md | Luật Trí tuệ nhân tạo 2025 | 3260 | `{"department": "legal", "lang": "vi", "chapter": "7"}` |
+| 8 | luat_ai_chuong8.md | Luật Trí tuệ nhân tạo 2025 | 2111 | `{"department": "general", "lang": "vi", "chapter": "8"}` |
 
 ### Metadata Schema
 
 | Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho retrieval? |
 |----------------|------|---------------|-------------------------------|
-| department | string | support | Giới hạn không gian tìm kiếm của tác tử theo phòng ban liên quan (ví dụ: chỉ tìm quy trình hỗ trợ khách hàng khi người dùng hỏi các câu liên quan đến hỗ trợ, tránh lẫn lộn với mã nguồn kỹ thuật). |
-| lang | string | vi | Lọc ngôn ngữ tài liệu giúp hệ thống tránh lấy nhầm các tài liệu đa ngôn ngữ gây nhiễu ngữ cảnh cho LLM khi trả lời bằng một ngôn ngữ cụ thể. |
+| department | string | legal | Lọc tài liệu theo thuộc tính phòng ban, hỗ trợ thu hẹp phạm vi tìm kiếm liên quan đến tuân thủ pháp lý và quản lý rủi ro (Chương 5, 6, 7). |
+| lang | string | vi | Lọc ngôn ngữ để tránh lấy nhầm các tài liệu đa ngữ gây nhiễu context. |
+| chapter | string | 1 | Cho phép lọc và trích xuất thông tin chính xác từ một chương cụ thể dựa trên câu hỏi của người dùng. |
 
 ---
 
@@ -75,19 +79,22 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|-------------------|
-| python_intro.txt | FixedSizeChunker (`fixed_size`) | 11 | 194.91 | Không (cắt ngang từ ở cuối chunk, ví dụ: 'emph', 'AP', 'sw') |
-| python_intro.txt | SentenceChunker (`by_sentences`) | 5 | 387.00 | Có (giữ nguyên ranh giới câu trọn vẹn) |
-| python_intro.txt | RecursiveChunker (`recursive`) | 12 | 160.08 | Có (tách theo cấu trúc dấu phân tách và giữ nguyên câu) |
+| luat_ai_chuong1.md | FixedSizeChunker (`fixed_size`) | 40 | 295.38 | Không (cắt ngang từ kỹ thuật ở cuối chunk) |
+| luat_ai_chuong1.md | SentenceChunker (`by_sentences`) | 25 | 424.84 | Có (giữ nguyên ranh giới câu trọn vẹn) |
+| luat_ai_chuong1.md | RecursiveChunker (`recursive`) | 47 | 225.40 | Có (tách theo cấu trúc và giữ câu nguyên vẹn) |
+| luat_ai_chuong2.md | FixedSizeChunker (`fixed_size`) | 49 | 294.96 | Không (cắt ngang các định nghĩa rủi ro) |
+| luat_ai_chuong2.md | SentenceChunker (`by_sentences`) | 29 | 447.76 | Có (giữ nguyên câu văn pháp luật) |
+| luat_ai_chuong2.md | RecursiveChunker (`recursive`) | 58 | 223.29 | Có (bảo toàn ngữ cảnh mục, điều khoản tốt) |
 
 ### Strategy Của Tôi
 
 **Loại:** RecursiveChunker (`recursive`)
 
 **Mô tả cách hoạt động:**
-> Chiến lược này hoạt động bằng cách phân chia văn bản dựa trên một danh sách các ký tự phân tách có thứ tự ưu tiên (`\n\n`, `\n`, `. `, ` `, `""`). Đầu tiên, nó cố gắng tách văn bản ở mức đoạn (`\n\n`), sau đó nếu đoạn nào vẫn lớn hơn `chunk_size` thì sẽ tách tiếp ở mức câu (`\n`, `. `) và cuối cùng là từ (` `). Điều này đảm bảo cấu trúc ngữ cảnh của tài liệu được bảo toàn tự nhiên nhất.
+> Chiến lược này hoạt động bằng cách phân chia văn bản dựa trên một danh sách các ký tự phân tách có thứ tự ưu tiên (`\n\n`, `\n`, `. `, ` `, `""`). Đầu tiên, nó cố gắng tách văn bản ở mức đoạn hoặc điều luật (`\n\n`), sau đó nếu đoạn nào vẫn lớn hơn `chunk_size` thì sẽ tách tiếp ở mức câu (`\n`, `. `) và cuối cùng là từ (` `). Điều này đảm bảo cấu trúc văn bản pháp luật không bị đứt đoạn giữa chừng.
 
 **Tại sao tôi chọn strategy này cho domain nhóm?**
-> Vì các tài liệu kỹ thuật trong domain của nhóm được viết dưới dạng Markdown và text có cấu trúc đoạn văn, danh sách rõ ràng. Việc phân tách đệ quy giúp giữ nguyên các khối thông tin cấu trúc như các bước triển khai hoặc các giải thích đi kèm nhau.
+> Vì các văn bản luật có cấu trúc chia mục, điều khoản, khoản mục rất rõ ràng. Việc phân tách đệ quy giúp giữ các khoản trong cùng một điều luật đi liền với nhau, tăng khả năng truy xuất đúng ngữ cảnh gốc.
 
 **Code snippet (nếu custom):**
 ```python
@@ -98,19 +105,19 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? |
 |-----------|----------|-------------|------------|--------------------|
-| python_intro.txt | best baseline (by_sentences) | 5 | 387.00 | Tốt, giữ trọn ý câu nhưng kích thước chunk hơi lớn. |
-| python_intro.txt | **của tôi** (recursive) | 12 | 160.08 | Rất tốt, các đoạn nhỏ gọn, tập trung đúng chủ đề hơn. |
+| luat_ai_chuong1.md | best baseline (by_sentences) | 25 | 424.84 | Khá tốt, tuy nhiên kích thước chunk biến động lớn. |
+| luat_ai_chuong1.md | **của tôi** (recursive) | 47 | 225.40 | Rất tốt, chunk nhỏ gọn và giữ nguyên cấu trúc văn bản. |
 
 ### So Sánh Với Thành Viên Khác
 
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| Tôi | Recursive (chunk_size=200) | 8/10 | Giữ ngữ cảnh cấu trúc tốt, chunk gọn gàng. | Đôi khi tách các đoạn dài thành nhiều phần nhỏ khó liên kết. |
-| Thành viên A | FixedSize (chunk_size=500) | 6/10 | Số lượng chunk ổn định, dễ cấu hình. | Bị cắt ngang các từ kỹ thuật và câu lệnh. |
-| Thành viên B | Sentence (max_sentences=3) | 7/10 | Đọc rất tự nhiên, bảo toàn câu hoàn hảo. | Kích thước các chunk biến động mạnh. |
+| Tôi | Recursive (chunk_size=400) | 0/10 | Giữ ngữ cảnh điều luật tốt, các chunk đồng đều. | Không tìm đúng ngữ cảnh do MockEmbedder tạo vector ngẫu nhiên. |
+| Thành viên A | FixedSize (chunk_size=300) | 0/10 | Số lượng chunk ổn định. | Bị cắt ngang các điều luật làm mất nghĩa. |
+| Thành viên B | Sentence (max_sentences=3) | 0/10 | Giữ nguyên ranh giới câu tuyệt đối. | Kích thước các chunk biến động mạnh. |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-> Chiến lược `RecursiveChunker` là tốt nhất cho domain này. Nó giúp giữ nguyên các câu lệnh kỹ thuật đi liền với lời giải thích của nó trong cùng một chunk mà không làm đứt đoạn nội dung như `FixedSizeChunker`, đồng thời cho kích thước chunk đồng đều và tối ưu hơn `SentenceChunker`.
+> Chiến lược `RecursiveChunker` là tốt nhất cho domain văn bản luật. Nó giúp bảo toàn cấu trúc văn bản pháp luật tự nhiên, giữ các điều khoản liên quan trong cùng một khối thông tin mà không cắt cụt từ ngữ như `FixedSizeChunker`, đồng thời kiểm soát kích thước chunk tốt hơn `SentenceChunker`.
 
 ---
 
@@ -172,36 +179,50 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | # | Query | Gold Answer |
 |---|-------|-------------|
-| 1 | Tại sao chất lượng chunking lại ảnh hưởng trực tiếp đến retrieval? | Nếu chunk quá ngắn sẽ thiếu ngữ cảnh; nếu quá dài sẽ loãng ý làm giảm độ chính xác của kết quả tìm kiếm. |
-| 2 | What are the four stages of a common vector search pipeline? | 1. Chunk documents, 2. Embed each chunk, 3. Store the vector and metadata, 4. Embed query and rank. |
-| 3 | What does the assistant do if the retrieval results are weak or contradictory? | The assistant should say so explicitly instead of pretending the answer is complete. |
-| 4 | Why do support authors need to avoid vague statements in support content? | Vague statements should be avoided because specific terms make chunks more useful for query matching. |
-| 5 | What is the limitation of Python regarding CPU-intensive workloads? | Python is usually slower than low-level compiled languages for CPU-intensive workloads. |
+| 1 | Phạm vi điều chỉnh của Luật Trí tuệ nhân tạo là gì? | Quy định về nghiên cứu, phát triển, cung cấp, triển khai và sử dụng hệ thống trí tuệ nhân tạo; quyền, nghĩa vụ và quản lý nhà nước về AI tại Việt Nam. |
+| 2 | Có mấy mức độ phân loại rủi ro của hệ thống trí tuệ nhân tạo? | Có 3 mức độ rủi ro: rủi ro cao, rủi ro trung bình, và rủi ro thấp. |
+| 3 | Hạ tầng trí tuệ nhân tạo quốc gia bao gồm những gì? | Bao gồm hạ tầng do Nhà nước, doanh nghiệp và tổ chức đầu tư: năng lực tính toán, dữ liệu dùng chung, mô hình ngôn ngữ lớn tiếng Việt... |
+| 4 | Khung đạo đức trí tuệ nhân tạo quốc gia được ban hành dựa trên nguyên tắc nào? | Bảo đảm an toàn/độ tin cậy; tôn trọng quyền con người/công dân; thúc đẩy hạnh phúc/thịnh vượng; đổi mới sáng tạo/trách nhiệm xã hội. |
+| 5 | Hình thức xử lý vi phạm trong hoạt động trí tuệ nhân tạo? | Tùy theo tính chất mức độ có thể bị xử phạt hành chính hoặc truy cứu trách nhiệm hình sự, gây thiệt hại phải bồi thường dân sự. |
 
-### Kết Quả Của Tôi
+### Kết Quả Của Tôi (với MockEmbedder mặc định)
 
 | # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Tại sao chất lượng chunking lại ảnh hưởng trực tiếp đến retrieval? | Ghi chú về Retrieval cho Trợ lý Tri thức Nội bộ... | -0.16534 | Yes | [Mock LLM] Trả lời dựa trên ngữ cảnh... |
-| 2 | What are the four stages of a common vector search pipeline? | Ghi chú về Retrieval cho Trợ lý Tri thức Nội bộ... | 0.16593 | No | [Mock LLM] Trả lời dựa trên ngữ cảnh sai... |
-| 3 | What does the assistant do if the retrieval results are weak or contradictory? | Customer Support Playbook for the AI Knowledge Assistant... | 0.19932 | No | [Mock LLM] Trả lời dựa trên ngữ cảnh sai... |
-| 4 | Why do support authors need to avoid vague statements in support content? | Customer Support Playbook for the AI Knowledge Assistant... | -0.06808 | Yes | [Mock LLM] Trả lời dựa trên ngữ cảnh... |
-| 5 | What is the limitation of Python regarding CPU-intensive workloads? | Customer Support Playbook for the AI Knowledge Assistant... | 0.19327 | No | [Mock LLM] Trả lời dựa trên ngữ cảnh sai... |
+| 1 | Phạm vi điều chỉnh của Luật Trí tuệ nhân tạo là gì? | luat_ai_chuong1_chunk_3 (Điều 2. Đối tượng áp dụng...) | 0.35838 | No | [Mock LLM] Trả lời: ### Điều 2. Đối tượng áp dụng... |
+| 2 | Có mấy mức độ phân loại rủi ro của hệ thống trí tuệ nhân tạo? | luat_ai_chuong2_chunk_38 (Điều 15. Quản lý rủi ro trung bình...) | 0.31102 | No | [Mock LLM] Trả lời: ### Điều 15. Quản lý rủi ro... |
+| 3 | Hạ tầng trí tuệ nhân tạo quốc gia bao gồm những gì? | luat_ai_chuong3_chunk_10 (4. Cơ sở dữ liệu của tổ chức, cá nhân...) | 0.28531 | No | [Mock LLM] Trả lời: 2. Bên triển khai hệ thống rủi ro cao... |
+| 4 | Khung đạo đức trí tuệ nhân tạo quốc gia được ban hành dựa trên nguyên tắc nào? | luat_ai_chuong5_chunk_5 (2. Hệ thống AI không thay thế thẩm quyền...) | 0.22909 | No | [Mock LLM] Trả lời: 4. Nhà nước triển khai Chương trình quốc gia... |
+| 5 | Hình thức xử lý vi phạm trong hoạt động trí tuệ nhân tạo? | luat_ai_chuong6_chunk_5 (3. Trách nhiệm bồi thường thiệt hại...) | 0.16135 | No | [Mock LLM] Trả lời: 2. Bên triển khai hệ thống rủi ro cao... |
 
-**Bao nhiêu queries trả về chunk relevant trong top-3?** 2 / 5
+**Bao nhiêu queries trả về chunk relevant trong top-3?** 0 / 5
+
+### Kết Quả Của Tôi (với LocalEmbedder thực tế - mô hình all-MiniLM-L6-v2)
+
+Nhóm đã cài đặt mô hình nhúng thực tế để đối chiếu và cải tiến. Dưới đây là kết quả thực tế thu được:
+
+| # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
+|---|-------|--------------------------------|-------|-----------|------------------------|
+| 1 | Phạm vi điều chỉnh của Luật Trí tuệ nhân tạo là gì? | luat_ai_chuong1_chunk_2 (1. Luật này quy định về nghiên cứu, phát triển...) | 0.77111 | Yes | [Agent Answer] Trả lời: b) Miễn, giảm hoặc điều chỉnh nghĩa vụ tuân thủ... |
+| 2 | Có mấy mức độ phân loại rủi ro của hệ thống trí tuệ nhân tạo? | luat_ai_chuong2_chunk_8 (b) Hệ thống trí tuệ nhân tạo có rủi ro trung bình được giám sát...) | 0.82360 | Yes | [Agent Answer] Trả lời: nối các chương trình hỗ trợ, quỹ, hạ tầng... |
+| 3 | Hạ tầng trí tuệ nhân tạo quốc gia bao gồm những gì? | luat_ai_chuong3_chunk_1 (1. Hạ tầng trí tuệ nhân tạo quốc gia là hạ tầng chiến lược...) | 0.77495 | Yes | [Agent Answer] Trả lời: 1. Hạ tầng trí tuệ nhân tạo quốc gia là hạ tầng chiến lược... |
+| 4 | Khung đạo đức trí tuệ nhân tạo quốc gia được ban hành dựa trên nguyên tắc nào? | luat_ai_chuong5_chunk_3 (4. Nhà nước khuyến khích tổ chức, cá nhân áp dụng Khung...) | 0.80588 | Yes (Top-2: chunk_0) | [Agent Answer] Trả lời: 5. Ứng dụng trí tuệ nhân tạo quan trọng trong... |
+| 5 | Hình thức xử lý vi phạm trong hoạt động trí tuệ nhân tạo? | luat_ai_chuong6_chunk_0 (## Chương VI: THANH TRA, KIỂM TRA VÀ XỬ LÝ VI PHẠM...) | 0.80217 | Yes (Top-2: chunk_2) | [Agent Answer] Trả lời: ## Chương VI: THANH TRA, KIỂM TRA VÀ XỬ LÝ VI PHẠM... |
+
+**Bao nhiêu queries trả về chunk relevant trong top-3?** 5 / 5
 
 ---
 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> Tôi học được từ các thành viên khác cách phân loại và gắn metadata chi tiết như phòng ban và ngôn ngữ. Điều này giúp tối ưu hóa bộ lọc đáng kể trước khi tính toán tương đồng vector.
+> Tôi học được từ các thành viên cách tổ chức và gán nhãn metadata phân loại chi tiết theo chương luật (`chapter`) và phòng ban (`department`). Việc này giúp giới hạn không gian tìm kiếm cực kỳ hiệu quả thông qua bộ lọc.
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
-> Các nhóm khác đã chỉ ra cách chuyển đổi tài liệu PDF phức tạp chứa bảng biểu sang định dạng Markdown chất lượng cao bằng công cụ chuyên dụng để tránh bị mất định dạng hoặc làm hỏng dữ liệu text.
+> Các nhóm khác đã chứng minh rằng khi làm việc với tài liệu dạng bảng biểu lớn của văn bản pháp luật, việc giữ nguyên cấu trúc Markdown định dạng bảng là vô cùng cần thiết để bộ tìm kiếm không làm vỡ liên kết thông tin.
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
-> Tôi sẽ sử dụng một mô hình embedding thực sự (như `all-MiniLM-L6-v2`) để chạy thử nghiệm nhằm đảm bảo kết quả tìm kiếm mang tính ngữ nghĩa đích thực thay vì hoàn toàn ngẫu nhiên như MockEmbedder hiện tại.
+> Tôi chắc chắn sẽ chuyển từ sử dụng `MockEmbedder` sang các mô hình thực tế như `all-MiniLM-L6-v2` hoặc OpenAI API. Lý do là MockEmbedder dựa trên băm MD5 thô nên hoàn toàn không giữ được quan hệ ngữ nghĩa của từ ngữ, dẫn đến độ chính xác truy xuất bằng 0% (0/5 câu hỏi). Trong thực tế bài tập nhóm, chúng tôi đã tiến hành tích hợp và chạy đối chiếu với mô hình `all-MiniLM-L6-v2`, giúp tăng tỷ lệ truy xuất chính xác từ 0/5 lên 5/5.
 
 ---
 
