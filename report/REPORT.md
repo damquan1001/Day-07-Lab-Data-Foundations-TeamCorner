@@ -112,12 +112,12 @@ class ArticleChunker:
 
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| Tôi | RecursiveChunker | [score] | Giữ ngữ cảnh tốt | Có thể tạo nhiều chunk khi text dài |
-| [Tên] | [strategy khác] | [score] | | |
-| [Tên] | [strategy khác] | [score] | | |
+| Tôi | ArticleChunker | 10 | Giữ trọn vẹn ý nghĩa của 1 điều | Số lượng chunk ít, đoạn dài có thể làm mờ ý nhỏ |
+| Khoa | FixedSizeChunker (size=200, overlap=0) | 6 | Code đơn giản, tốc độ chunking rất nhanh | Dễ bị cắt ngang câu hoặc giữa đoạn ý quan trọng |
+| Quân | SentenceChunker (max=3) | 7 | Giữ nguyên vẹn cấu trúc từng câu | Có thể thiếu ngữ cảnh liên kết từ các câu trước đó |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-> [Viết ý kiến dựa trên kết quả thực tế của nhóm.]
+> Dựa trên kết quả thực tế của nhóm, **ArticleChunker** (cắt theo Điều luật) là strategy tốt nhất cho domain "Luật Trí tuệ nhân tạo". Văn bản luật được cấu trúc thành các Điều, Khoản rất chặt chẽ. Việc dùng FixedSize hay SentenceChunker sẽ vô tình chia cắt các Khoản trong cùng một Điều ra làm nhiều đoạn khác nhau, khiến cho LLM không nắm được toàn bộ quy định khi truy vấn. Khi gom chung toàn bộ 1 Điều vào 1 chunk duy nhất, hệ thống RAG trả lời chính xác và đầy đủ ngữ cảnh pháp lý hơn hẳn.
 
 ---
 
