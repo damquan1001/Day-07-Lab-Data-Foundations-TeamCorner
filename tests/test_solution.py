@@ -325,5 +325,172 @@ class TestEmbeddingStoreDeleteDocument(unittest.TestCase):
         self.assertLess(size_after, size_before)
 
 
+class TestEmbeddingStoreBM25(unittest.TestCase):
+    def setUp(self):
+        self.store = template.EmbeddingStore("test_bm25")
+        self.store.add_documents([
+            template.Document(
+                "policy_housing",
+                "Housing assistance policy covers rent relief, eligibility, and application deadlines.",
+                {"jurisdiction": "city", "policy_area": "housing", "language": "en"},
+            ),
+            template.Document(
+                "policy_tax",
+                "Tax exemption policy explains business filings and income thresholds.",
+                {"jurisdiction": "state", "policy_area": "tax", "language": "en"},
+            ),
+            template.Document(
+                "policy_health",
+                "Public health policy describes vaccination clinics and safety reporting.",
+                {"jurisdiction": "city", "policy_area": "health", "language": "en"},
+            ),
+        ])
+
+    def test_exact_keyword_query_ranks_matching_policy_first(self):
+        results = self.store.search_bm25("rent relief eligibility", top_k=3)
+        self.assertEqual(results[0]["doc_id"], "policy_housing")
+        self.assertGreater(results[0]["score"], results[-1]["score"])
+
+    def test_bm25_results_have_expected_keys_and_sorted_scores(self):
+        results = self.store.search_bm25("policy", top_k=2)
+        self.assertLessEqual(len(results), 2)
+        for result in results:
+            self.assertIn("content", result)
+            self.assertIn("metadata", result)
+            self.assertIn("score", result)
+
+        scores = [result["score"] for result in results]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+
+    def test_bm25_filter_by_metadata(self):
+        results = self.store.search_bm25_with_filter(
+            "policy",
+            top_k=10,
+            metadata_filter={"jurisdiction": "city"},
+        )
+        for result in results:
+            self.assertEqual(result["metadata"]["jurisdiction"], "city")
+
+    def test_bm25_no_filter_matches_unfiltered_count(self):
+        results_filtered = self.store.search_bm25_with_filter("policy", top_k=10, metadata_filter=None)
+        results_unfiltered = self.store.search_bm25("policy", top_k=10)
+        self.assertEqual(len(results_filtered), len(results_unfiltered))
+
+    def test_bm25_empty_query_or_non_positive_top_k_returns_empty(self):
+        self.assertEqual(self.store.search_bm25("", top_k=5), [])
+        self.assertEqual(self.store.search_bm25("policy", top_k=0), [])
+
+    def test_hybrid_results_have_component_scores_and_sorted_scores(self):
+        results = self.store.search_hybrid("rent relief eligibility", top_k=3)
+        self.assertGreater(len(results), 0)
+        for result in results:
+            self.assertIn("score", result)
+            self.assertIn("bm25_score", result)
+            self.assertIn("vector_score", result)
+
+        scores = [result["score"] for result in results]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+
+    def test_hybrid_filter_by_metadata(self):
+        results = self.store.search_hybrid_with_filter(
+            "policy",
+            top_k=10,
+            metadata_filter={"jurisdiction": "city"},
+        )
+        for result in results:
+            self.assertEqual(result["metadata"]["jurisdiction"], "city")
+
+    def test_hybrid_empty_query_or_non_positive_top_k_returns_empty(self):
+        self.assertEqual(self.store.search_hybrid("", top_k=5), [])
+        self.assertEqual(self.store.search_hybrid("policy", top_k=0), [])
+
+    def test_hybrid_keyword_weight_keeps_exact_match_first(self):
+        results = self.store.search_hybrid("rent relief eligibility", top_k=3, bm25_weight=0.9)
+        self.assertEqual(results[0]["doc_id"], "policy_housing")
+
+
+class TestAILawRAGData(unittest.TestCase):
+    def test_ai_law_loader_splits_articles_with_metadata(self):
+        main_module = importlib.import_module("main")
+        law_path = DAY_DIR / "data" / "Luật Trí tuệ nhân tạo.md"
+        docs = main_module.load_documents_from_files([str(law_path)])
+
+        self.assertGreaterEqual(len(docs), 30)
+        article_numbers = {doc.metadata.get("article_number") for doc in docs}
+        self.assertIn("7", article_numbers)
+        self.assertIn("34", article_numbers)
+
+        for doc in docs:
+            self.assertEqual(doc.metadata["document_type"], "law")
+            self.assertEqual(doc.metadata["language"], "vi")
+            self.assertIn("article", doc.metadata)
+
+    def test_ai_law_bm25_retrieves_effective_date_article(self):
+        main_module = importlib.import_module("main")
+        law_path = DAY_DIR / "data" / "Luật Trí tuệ nhân tạo.md"
+        docs = main_module.load_documents_from_files([str(law_path)])
+        store = template.EmbeddingStore("ai_law_bm25")
+        store.add_documents(docs)
+
+        results = store.search_bm25_with_filter(
+            "Luật Trí tuệ nhân tạo có hiệu lực từ ngày nào?",
+            top_k=3,
+            metadata_filter={"document_type": "law", "language": "vi"},
+        )
+        top_articles = {result["metadata"]["article_number"] for result in results}
+        self.assertIn("34", top_articles)
+
+    def test_ai_law_hybrid_retrieves_transition_article(self):
+        main_module = importlib.import_module("main")
+        law_path = DAY_DIR / main_module.SAMPLE_FILES[0]
+        docs = main_module.load_documents_from_files([str(law_path)])
+        store = template.EmbeddingStore("ai_law_hybrid")
+        store.add_documents(docs)
+
+        results = store.search_hybrid_with_filter(
+            main_module.LAW_BENCHMARK_QUERIES[4],
+            top_k=3,
+            metadata_filter={"document_type": "law", "language": "vi"},
+        )
+        self.assertEqual(results[0]["metadata"]["article_number"], "35")
+
+
+class TestChatDemoBackend(unittest.TestCase):
+    def test_chat_demo_preset_questions_returns_five_questions(self):
+        chat_demo = importlib.import_module("chat_demo")
+        questions = chat_demo.get_preset_questions()
+
+        self.assertEqual(len(questions), 5)
+        self.assertTrue(all(isinstance(question, str) and question for question in questions))
+
+    def test_chat_demo_search_returns_results_for_each_strategy(self):
+        chat_demo = importlib.import_module("chat_demo")
+        question = chat_demo.get_preset_questions()[0]
+
+        for strategy in ("vector", "bm25", "hybrid"):
+            result = chat_demo.search_demo(question, strategy=strategy, top_k=3)
+            self.assertEqual(result["strategy"], strategy)
+            self.assertGreater(len(result["results"]), 0)
+            self.assertIn("answer", result)
+
+    def test_chat_demo_compare_returns_three_strategies(self):
+        chat_demo = importlib.import_module("chat_demo")
+        result = chat_demo.compare_demo(chat_demo.get_preset_questions()[0], top_k=1)
+
+        self.assertEqual(len(result["comparisons"]), 3)
+        self.assertEqual(
+            {comparison["strategy"] for comparison in result["comparisons"]},
+            {"vector", "bm25", "hybrid"},
+        )
+
+    def test_chat_demo_hybrid_retrieves_expected_benchmark_articles(self):
+        chat_demo = importlib.import_module("chat_demo")
+        expected_articles = ["34", "7", "26", "30", "35"]
+
+        for question, expected_article in zip(chat_demo.get_preset_questions(), expected_articles):
+            result = chat_demo.search_demo(question, strategy="hybrid", top_k=1)
+            self.assertEqual(result["results"][0]["article_number"], expected_article)
+
+
 if __name__ == "__main__":
     unittest.main()
