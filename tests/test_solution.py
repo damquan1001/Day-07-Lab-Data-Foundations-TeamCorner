@@ -455,5 +455,42 @@ class TestAILawRAGData(unittest.TestCase):
         self.assertEqual(results[0]["metadata"]["article_number"], "35")
 
 
+class TestChatDemoBackend(unittest.TestCase):
+    def test_chat_demo_preset_questions_returns_five_questions(self):
+        chat_demo = importlib.import_module("chat_demo")
+        questions = chat_demo.get_preset_questions()
+
+        self.assertEqual(len(questions), 5)
+        self.assertTrue(all(isinstance(question, str) and question for question in questions))
+
+    def test_chat_demo_search_returns_results_for_each_strategy(self):
+        chat_demo = importlib.import_module("chat_demo")
+        question = chat_demo.get_preset_questions()[0]
+
+        for strategy in ("vector", "bm25", "hybrid"):
+            result = chat_demo.search_demo(question, strategy=strategy, top_k=3)
+            self.assertEqual(result["strategy"], strategy)
+            self.assertGreater(len(result["results"]), 0)
+            self.assertIn("answer", result)
+
+    def test_chat_demo_compare_returns_three_strategies(self):
+        chat_demo = importlib.import_module("chat_demo")
+        result = chat_demo.compare_demo(chat_demo.get_preset_questions()[0], top_k=1)
+
+        self.assertEqual(len(result["comparisons"]), 3)
+        self.assertEqual(
+            {comparison["strategy"] for comparison in result["comparisons"]},
+            {"vector", "bm25", "hybrid"},
+        )
+
+    def test_chat_demo_hybrid_retrieves_expected_benchmark_articles(self):
+        chat_demo = importlib.import_module("chat_demo")
+        expected_articles = ["34", "7", "26", "30", "35"]
+
+        for question, expected_article in zip(chat_demo.get_preset_questions(), expected_articles):
+            result = chat_demo.search_demo(question, strategy="hybrid", top_k=1)
+            self.assertEqual(result["results"][0]["article_number"], expected_article)
+
+
 if __name__ == "__main__":
     unittest.main()

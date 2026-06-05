@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Law Retrieval Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1b1f24;
+      --muted: #68707c;
+      --line: #d7dde5;
+      --panel: #f6f8fb;
+      --surface: #ffffff;
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --blue: #2563eb;
+      --amber: #b45309;
+      --shadow: 0 8px 26px rgba(15, 23, 42, 0.10);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: #eef2f6;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+    }
+
+    aside {
+      background: #172033;
+      color: #f8fafc;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 750;
+    }
+
+    .brand p {
+      margin: 0;
+      color: #b9c4d4;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #cbd5e1;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    select,
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    select:focus,
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+    }
+
+    .presets {
+      display: grid;
+      gap: 8px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .preset {
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #e8eef8;
+      background: rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 10px;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.35;
+      cursor: pointer;
+    }
+
+    .preset:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      min-width: 0;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .topbar strong {
+      font-size: 15px;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .chat {
+      padding: 18px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .message {
+      max-width: 960px;
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: #e8f3ff;
+      border-color: #b8d8ff;
+      box-shadow: none;
+      max-width: 760px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      background: #eef6f5;
+      color: var(--accent-strong);
+      border: 1px solid #c7e2df;
+    }
+
+    .answer {
+      margin: 0 0 12px;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .results {
+      display: grid;
+      gap: 8px;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 10px 12px;
+      font-weight: 650;
+      font-size: 13px;
+    }
+
+    .result-body {
+      border-top: 1px solid var(--line);
+      padding: 10px 12px;
+      color: #2f3743;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .score-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .composer {
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button.primary,
+    button.secondary {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    button.primary:hover {
+      background: var(--accent-strong);
+    }
+
+    button.secondary {
+      background: #eff4fa;
+      color: #233044;
+      border: 1px solid var(--line);
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .compare-card {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--panel);
+    }
+
+    .compare-card h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--accent-strong);
+      text-transform: uppercase;
+    }
+
+    .compare-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        max-height: 42vh;
+      }
+
+      .composer {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>AI Law Retrieval Demo</h1>
+        <p>Compare Vector, BM25, and Hybrid retrieval on the Vietnamese AI law document.</p>
+      </div>
+
+      <div class="control-group">
+        <label for="strategy">Strategy</label>
+        <select id="strategy">
+          <option value="hybrid">Hybrid BM25 + Vector</option>
+          <option value="bm25">BM25</option>
+          <option value="vector">Vector</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="topK">Top K</label>
+        <select id="topK">
+          <option value="1">1</option>
+          <option value="3" selected>3</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Preset Questions</label>
+        <div id="presets" class="presets"></div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <strong>Retrieval Strategy Chat</strong>
+        <span id="status" class="status">Loading law data...</span>
+      </div>
+
+      <section id="chat" class="chat" aria-live="polite"></section>
+
+      <form id="composer" class="composer">
+        <input id="question" name="question" autocomplete="off" placeholder="Nhập câu hỏi về Luật Trí tuệ nhân tạo...">
+        <button class="secondary" type="button" id="compare">Compare all</button>
+        <button class="primary" type="submit">Send</button>
+      </form>
+    </main>
+  </div>
+
+  <script>
+    const chat = document.querySelector("#chat");
+    const presets = document.querySelector("#presets");
+    const statusText = document.querySelector("#status");
+    const questionInput = document.querySelector("#question");
+    const strategySelect = document.querySelector("#strategy");
+    const topKSelect = document.querySelector("#topK");
+    const composer = document.querySelector("#composer");
+    const compareButton = document.querySelector("#compare");
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function addUserMessage(question) {
+      const node = document.createElement("article");
+      node.className = "message user";
+      node.textContent = question;
+      chat.appendChild(node);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function resultDetails(result, index) {
+      const scoreBits = [
+        `score ${result.score}`
+      ];
+      if (result.bm25_score !== undefined) scoreBits.push(`bm25 ${result.bm25_score}`);
+      if (result.vector_score !== undefined) scoreBits.push(`vector ${result.vector_score}`);
+      return `
+        <details ${index === 0 ? "open" : ""}>
+          <summary>${escapeHtml(result.article)} - ${escapeHtml(result.title || "Untitled")}</summary>
+          <div class="result-body">
+            <div class="score-row">${scoreBits.map(bit => `<span>${escapeHtml(bit)}</span>`).join("")}</div>
+            <div>${escapeHtml(result.preview)}</div>
+          </div>
+        </details>
+      `;
+    }
+
+    function addSearchMessage(payload) {
+      const node = document.createElement("article");
+      node.className = "message";
+      node.innerHTML = `
+        <div class="meta">
+          <span class="pill">${escapeHtml(payload.strategy)}</span>
+          <span>top_k=${escapeHtml(payload.top_k)}</span>
+        </div>
+        <p class="answer">${escapeHtml(payload.answer)}</p>
+        <div class="results">${payload.results.map(resultDetails).join("")}</div>
+      `;
+      chat.appendChild(node);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addCompareMessage(payload) {
+      const node = document.createElement("article");
+      node.className = "message";
+      const cards = payload.comparisons.map(item => {
+        const top = item.results[0] || {};
+        return `
+          <div class="compare-card">
+            <h3>${escapeHtml(item.strategy)}</h3>
+            <p><strong>${escapeHtml(top.article || "No result")}</strong></p>
+            <p>${escapeHtml(top.title || "")}</p>
+            <p>score ${escapeHtml(top.score ?? "")}</p>
+          </div>
+        `;
+      }).join("");
+      node.innerHTML = `
+        <div class="meta"><span class="pill">comparison</span><span>top_k=${escapeHtml(payload.top_k)}</span></div>
+        <div class="comparison">${cards}</div>
+      `;
+      chat.appendChild(node);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function postJson(url, payload) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    async function submitQuestion(question, compare = false) {
+      const trimmed = question.trim();
+      if (!trimmed) return;
+      addUserMessage(trimmed);
+      questionInput.value = "";
+      statusText.textContent = compare ? "Comparing strategies..." : "Searching...";
+      try {
+        const payload = {
+          question: trimmed,
+          strategy: strategySelect.value,
+          top_k: Number(topKSelect.value)
+        };
+        if (compare) {
+          addCompareMessage(await postJson("/api/compare", payload));
+        } else {
+          addSearchMessage(await postJson("/api/search", payload));
+        }
+        statusText.textContent = "Ready";
+      } catch (error) {
+        statusText.textContent = error.message;
+      }
+    }
+
+    async function loadQuestions() {
+      const response = await fetch("/api/questions");
+      const data = await response.json();
+      statusText.textContent = `${data.document_count} article chunks loaded`;
+      presets.innerHTML = "";
+      data.questions.forEach(question => {
+        const button = document.createElement("button");
+        button.className = "preset";
+        button.type = "button";
+        button.textContent = question;
+        button.addEventListener("click", () => submitQuestion(question));
+        presets.appendChild(button);
+      });
+      if (data.questions[0]) {
+        questionInput.value = data.questions[0];
+      }
+    }
+
+    composer.addEventListener("submit", event => {
+      event.preventDefault();
+      submitQuestion(questionInput.value);
+    });
+
+    compareButton.addEventListener("click", () => submitQuestion(questionInput.value, true));
+
+    loadQuestions();
+  </script>
+</body>
+</html>
