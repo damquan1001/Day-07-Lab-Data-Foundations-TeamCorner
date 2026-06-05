@@ -325,5 +325,93 @@ class TestEmbeddingStoreDeleteDocument(unittest.TestCase):
         self.assertLess(size_after, size_before)
 
 
+class TestEmbeddingStoreBM25(unittest.TestCase):
+    def setUp(self):
+        self.store = template.EmbeddingStore("test_bm25")
+        self.store.add_documents([
+            template.Document(
+                "policy_housing",
+                "Housing assistance policy covers rent relief, eligibility, and application deadlines.",
+                {"jurisdiction": "city", "policy_area": "housing", "language": "en"},
+            ),
+            template.Document(
+                "policy_tax",
+                "Tax exemption policy explains business filings and income thresholds.",
+                {"jurisdiction": "state", "policy_area": "tax", "language": "en"},
+            ),
+            template.Document(
+                "policy_health",
+                "Public health policy describes vaccination clinics and safety reporting.",
+                {"jurisdiction": "city", "policy_area": "health", "language": "en"},
+            ),
+        ])
+
+    def test_exact_keyword_query_ranks_matching_policy_first(self):
+        results = self.store.search_bm25("rent relief eligibility", top_k=3)
+        self.assertEqual(results[0]["doc_id"], "policy_housing")
+        self.assertGreater(results[0]["score"], results[-1]["score"])
+
+    def test_bm25_results_have_expected_keys_and_sorted_scores(self):
+        results = self.store.search_bm25("policy", top_k=2)
+        self.assertLessEqual(len(results), 2)
+        for result in results:
+            self.assertIn("content", result)
+            self.assertIn("metadata", result)
+            self.assertIn("score", result)
+
+        scores = [result["score"] for result in results]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+
+    def test_bm25_filter_by_metadata(self):
+        results = self.store.search_bm25_with_filter(
+            "policy",
+            top_k=10,
+            metadata_filter={"jurisdiction": "city"},
+        )
+        for result in results:
+            self.assertEqual(result["metadata"]["jurisdiction"], "city")
+
+    def test_bm25_no_filter_matches_unfiltered_count(self):
+        results_filtered = self.store.search_bm25_with_filter("policy", top_k=10, metadata_filter=None)
+        results_unfiltered = self.store.search_bm25("policy", top_k=10)
+        self.assertEqual(len(results_filtered), len(results_unfiltered))
+
+    def test_bm25_empty_query_or_non_positive_top_k_returns_empty(self):
+        self.assertEqual(self.store.search_bm25("", top_k=5), [])
+        self.assertEqual(self.store.search_bm25("policy", top_k=0), [])
+
+
+class TestAILawRAGData(unittest.TestCase):
+    def test_ai_law_loader_splits_articles_with_metadata(self):
+        main_module = importlib.import_module("main")
+        law_path = DAY_DIR / "data" / "Luật Trí tuệ nhân tạo.md"
+        docs = main_module.load_documents_from_files([str(law_path)])
+
+        self.assertGreaterEqual(len(docs), 30)
+        article_numbers = {doc.metadata.get("article_number") for doc in docs}
+        self.assertIn("7", article_numbers)
+        self.assertIn("34", article_numbers)
+
+        for doc in docs:
+            self.assertEqual(doc.metadata["document_type"], "law")
+            self.assertEqual(doc.metadata["language"], "vi")
+            self.assertIn("article", doc.metadata)
+
+    def test_ai_law_bm25_retrieves_effective_date_article(self):
+        main_module = importlib.import_module("main")
+        law_path = DAY_DIR / "data" / "Luật Trí tuệ nhân tạo.md"
+        docs = main_module.load_documents_from_files([str(law_path)])
+        store = template.EmbeddingStore("ai_law_bm25")
+        store.add_documents(docs)
+
+        results = store.search_bm25_with_filter(
+            "Luật Trí tuệ nhân tạo có hiệu lực từ ngày nào?",
+            top_k=3,
+            metadata_filter={"document_type": "law", "language": "vi"},
+        )
+        top_articles = {result["metadata"]["article_number"] for result in results}
+        self.assertIn("34", top_articles)
+
+
 if __name__ == "__main__":
     unittest.main()

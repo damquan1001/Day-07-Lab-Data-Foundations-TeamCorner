@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import math
+import re
+from collections import Counter
 from typing import Any, Callable
 
 from .chunking import _dot
 from .embeddings import _mock_embed
 from .models import Document
+
+
+def _tokenize(text: str) -> list[str]:
+    return re.findall(r"\w+", text.lower())
 
 
 class EmbeddingStore:
@@ -46,6 +53,8 @@ class EmbeddingStore:
             "content": doc.content,
             "metadata": metadata,
             "embedding": self._embedding_fn(doc.content),
+            "tokens": _tokenize(doc.content),
+            "title_tokens": _tokenize(str(metadata.get("article_title", ""))),
         }
 
     def _search_records(self, query: str, records: list[dict[str, Any]], top_k: int) -> list[dict[str, Any]]:
@@ -64,6 +73,65 @@ class EmbeddingStore:
                     "score": _dot(query_embedding, record["embedding"]),
                 }
             )
+        results.sort(key=lambda result: result["score"], reverse=True)
+        return results[:top_k]
+
+    def _bm25_score_records(self, query: str, records: list[dict[str, Any]], top_k: int) -> list[dict[str, Any]]:
+        if top_k <= 0:
+            return []
+
+        query_tokens = _tokenize(query)
+        if not query_tokens or not records:
+            return []
+
+        document_count = len(records)
+        document_lengths = [len(record["tokens"]) for record in records]
+        average_document_length = sum(document_lengths) / document_count if document_count else 0
+        if average_document_length == 0:
+            return []
+
+        document_frequency: Counter[str] = Counter()
+        for record in records:
+            document_frequency.update(set(record["tokens"]))
+
+        k1 = 1.5
+        b = 0.75
+        results = []
+        for record in records:
+            tokens = record["tokens"]
+            token_counts = Counter(tokens)
+            document_length = len(tokens)
+            score = 0.0
+
+            for token in query_tokens:
+                term_frequency = token_counts.get(token, 0)
+                if term_frequency == 0:
+                    continue
+
+                matches = document_frequency[token]
+                inverse_document_frequency = math.log(
+                    1 + (document_count - matches + 0.5) / (matches + 0.5)
+                )
+                denominator = term_frequency + k1 * (
+                    1 - b + b * document_length / average_document_length
+                )
+                score += inverse_document_frequency * (
+                    term_frequency * (k1 + 1) / denominator
+                )
+
+            title_matches = set(query_tokens) & set(record.get("title_tokens", []))
+            score += 2.0 * len(title_matches)
+
+            results.append(
+                {
+                    "id": record["id"],
+                    "doc_id": record["doc_id"],
+                    "content": record["content"],
+                    "metadata": dict(record["metadata"]),
+                    "score": score,
+                }
+            )
+
         results.sort(key=lambda result: result["score"], reverse=True)
         return results[:top_k]
 
@@ -104,6 +172,27 @@ class EmbeddingStore:
             if all(record["metadata"].get(key) == value for key, value in metadata_filter.items())
         ]
         return self._search_records(query, filtered_records, top_k)
+
+    def search_bm25(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
+        """Find the top_k documents with BM25 keyword relevance."""
+        return self._bm25_score_records(query, self._store, top_k)
+
+    def search_bm25_with_filter(
+        self,
+        query: str,
+        top_k: int = 3,
+        metadata_filter: dict | None = None,
+    ) -> list[dict[str, Any]]:
+        """Run BM25 search after optional exact-match metadata filtering."""
+        if not metadata_filter:
+            return self.search_bm25(query, top_k=top_k)
+
+        filtered_records = [
+            record
+            for record in self._store
+            if all(record["metadata"].get(key) == value for key, value in metadata_filter.items())
+        ]
+        return self._bm25_score_records(query, filtered_records, top_k)
 
     def delete_document(self, doc_id: str) -> bool:
         """
