@@ -1,6 +1,6 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
+**Họ tên:** Trần Nguyễn Đăng Khoa
 **Nhóm:** TeamCorner
 **Ngày:** 05/06/2026
 
@@ -124,12 +124,13 @@ chunks = [p.strip() for p in parts if "### Điều" in p]
 
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| Tôi | ArticleChunker + 8 file + chapter filter | 8/10 (Local top-1) | Q2–Q5 đúng với filter; chuong8 chỉ 3 Điều | Q1 (định nghĩa) vẫn trả Điều 1 |
-| [Tên] | RecursiveChunker | — | — | *(cập nhật sau)* |
-| [Tên] | SentenceChunker | — | — | *(cập nhật sau)* |
+| Tôi (Khoa) | ArticleChunker + 8 file + chapter filter | 8/10 (Local top-1) | Q2-Q5 đúng với filter; `chuong8` chỉ có 3 Điều nên truy xuất Điều 34/35 rất chính xác. | Q1 về định nghĩa vẫn trả Điều 1 thay vì Điều 3; cần tách nhỏ Điều 3 theo khoản hoặc dùng embedder tốt hơn cho tiếng Việt. |
+| Quân | Article-level + Hybrid BM25/Vector | 10/10 | Kết hợp BM25 và vector search, tận dụng được cả match tiêu đề Điều lẫn tương đồng ngữ nghĩa; benchmark top-1 đúng 5/5. | Phụ thuộc nhiều vào metadata/heading rõ ràng và tokenization tiếng Việt. |
+| Đạt | RecursiveChunker (chunk_size=400) | 10/10 (Local top-3) | Chunk nhỏ gọn, tìm được 5/5 relevant trong top-3 và không phụ thuộc metadata chương. | Một Điều dài có thể bị chia thành nhiều chunk, nên câu trả lời pháp lý đôi khi thiếu đủ các khoản liên quan. |
+| Nam | ArticleChunker (1 Điều/chunk) | 10/10 | Giữ nguyên toàn bộ một Điều, phù hợp với cấu trúc văn bản luật và đạt 5/5 query relevant trong top-3. | Chunk dài hơn RecursiveChunker; nếu hỏi một chi tiết rất nhỏ thì context trả về có thể rộng. |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-> **ArticleChunker + 8 file + filter `chapter`** — Local đạt 4/5 top-1 đúng (Q2–Q5), so với 1 file không filter chỉ 1/5. Tách chương giúp metadata filter có ý nghĩa thực sự; chunk theo Điều giữ gold answer trong một vector.
+> Với domain luật, nhóm strategy theo **Điều luật** là phù hợp nhất vì mỗi Điều là một đơn vị pháp lý hoàn chỉnh. Trong đó, **Article-level chunking + metadata/filter + hybrid BM25/vector** cho lợi thế rõ nhất khi câu hỏi có cụm từ pháp lý chính xác hoặc có thể xác định chương. Điểm cần cải thiện là tách nhỏ các Điều có quá nhiều định nghĩa, ví dụ Điều 3, để không làm mất độ chính xác ở câu hỏi hẹp.
 
 ---
 
