@@ -30,6 +30,12 @@ class KnowledgeBaseAgent:
                 top_k=top_k,
                 metadata_filter=metadata_filter,
             )
+        elif self.retrieval_strategy == "hybrid":
+            results = self.store.search_hybrid_with_filter(
+                question,
+                top_k=top_k,
+                metadata_filter=metadata_filter,
+            )
         elif metadata_filter:
             results = self.store.search_with_filter(question, top_k=top_k, metadata_filter=metadata_filter)
         else:

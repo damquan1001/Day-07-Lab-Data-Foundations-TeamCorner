@@ -11,7 +11,7 @@
 ### Cosine Similarity (Ex 1.1)
 
 **High cosine similarity nghĩa là gì?**
-> *Viết 1-2 câu:*
+> Nghĩa là hai vector đó đang có tương đồng sát với nhau về ý nghĩa, ngữ cảnh hoặc đặc điểm. Về mặt toán học, đó là 2 vector góc hẹp và gần cùng hướng, cosine càng cao thì dữ liệu 2 vector đó càng giống nhau
 
 **Ví dụ HIGH similarity:**
 - Sentence A:

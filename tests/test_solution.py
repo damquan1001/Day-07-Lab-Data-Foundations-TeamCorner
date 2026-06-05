@@ -380,6 +380,34 @@ class TestEmbeddingStoreBM25(unittest.TestCase):
         self.assertEqual(self.store.search_bm25("", top_k=5), [])
         self.assertEqual(self.store.search_bm25("policy", top_k=0), [])
 
+    def test_hybrid_results_have_component_scores_and_sorted_scores(self):
+        results = self.store.search_hybrid("rent relief eligibility", top_k=3)
+        self.assertGreater(len(results), 0)
+        for result in results:
+            self.assertIn("score", result)
+            self.assertIn("bm25_score", result)
+            self.assertIn("vector_score", result)
+
+        scores = [result["score"] for result in results]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+
+    def test_hybrid_filter_by_metadata(self):
+        results = self.store.search_hybrid_with_filter(
+            "policy",
+            top_k=10,
+            metadata_filter={"jurisdiction": "city"},
+        )
+        for result in results:
+            self.assertEqual(result["metadata"]["jurisdiction"], "city")
+
+    def test_hybrid_empty_query_or_non_positive_top_k_returns_empty(self):
+        self.assertEqual(self.store.search_hybrid("", top_k=5), [])
+        self.assertEqual(self.store.search_hybrid("policy", top_k=0), [])
+
+    def test_hybrid_keyword_weight_keeps_exact_match_first(self):
+        results = self.store.search_hybrid("rent relief eligibility", top_k=3, bm25_weight=0.9)
+        self.assertEqual(results[0]["doc_id"], "policy_housing")
+
 
 class TestAILawRAGData(unittest.TestCase):
     def test_ai_law_loader_splits_articles_with_metadata(self):
@@ -411,6 +439,20 @@ class TestAILawRAGData(unittest.TestCase):
         )
         top_articles = {result["metadata"]["article_number"] for result in results}
         self.assertIn("34", top_articles)
+
+    def test_ai_law_hybrid_retrieves_transition_article(self):
+        main_module = importlib.import_module("main")
+        law_path = DAY_DIR / main_module.SAMPLE_FILES[0]
+        docs = main_module.load_documents_from_files([str(law_path)])
+        store = template.EmbeddingStore("ai_law_hybrid")
+        store.add_documents(docs)
+
+        results = store.search_hybrid_with_filter(
+            main_module.LAW_BENCHMARK_QUERIES[4],
+            top_k=3,
+            metadata_filter={"document_type": "law", "language": "vi"},
+        )
+        self.assertEqual(results[0]["metadata"]["article_number"], "35")
 
 
 if __name__ == "__main__":

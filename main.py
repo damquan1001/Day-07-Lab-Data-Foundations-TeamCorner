@@ -219,9 +219,24 @@ def run_manual_demo(question: str | None = None, sample_files: list[str] | None 
         print(f"   title: {result['metadata'].get('article_title')}")
         print(f"   content preview: {result['content'][:120].replace(chr(10), ' ')}...")
 
+    print("\n=== Hybrid BM25 + Vector Search Test ===")
+    hybrid_results = store.search_hybrid_with_filter(
+        query,
+        top_k=3,
+        metadata_filter={"document_type": "law", "language": "vi"},
+    )
+    for index, result in enumerate(hybrid_results, start=1):
+        print(
+            f"{index}. score={result['score']:.3f} "
+            f"bm25={result['bm25_score']:.3f} vector={result['vector_score']:.3f} "
+            f"article={result['metadata'].get('article')}"
+        )
+        print(f"   title: {result['metadata'].get('article_title')}")
+        print(f"   content preview: {result['content'][:120].replace(chr(10), ' ')}...")
+
     print("\n=== Benchmark Queries ===")
     for index, benchmark_query in enumerate(LAW_BENCHMARK_QUERIES, start=1):
-        top_result = store.search_bm25_with_filter(
+        top_result = store.search_hybrid_with_filter(
             benchmark_query,
             top_k=1,
             metadata_filter={"document_type": "law", "language": "vi"},
@@ -229,10 +244,10 @@ def run_manual_demo(question: str | None = None, sample_files: list[str] | None 
         article = top_result[0]["metadata"].get("article") if top_result else "no result"
         title = top_result[0]["metadata"].get("article_title") if top_result else ""
         print(f"{index}. {benchmark_query}")
-        print(f"   top BM25 article: {article} - {title}")
+        print(f"   top hybrid article: {article} - {title}")
 
     print("\n=== KnowledgeBaseAgent Test ===")
-    agent = KnowledgeBaseAgent(store=store, llm_fn=demo_llm, retrieval_strategy="bm25")
+    agent = KnowledgeBaseAgent(store=store, llm_fn=demo_llm, retrieval_strategy="hybrid")
     print(f"Question: {query}")
     print("Agent answer:")
     print(agent.answer(query, top_k=3, metadata_filter={"document_type": "law", "language": "vi"}))
