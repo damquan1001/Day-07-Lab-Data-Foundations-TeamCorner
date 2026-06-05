@@ -1,0 +1,319 @@
+{
+  "inventory": [
+    {
+      "file": "luat_ai_chuong1.md",
+      "source": "data/luat_ai_chuong1.md",
+      "chars": 10218,
+      "chapter": "I",
+      "topic": "general",
+      "articles": 8
+    },
+    {
+      "file": "luat_ai_chuong2.md",
+      "source": "data/luat_ai_chuong2.md",
+      "chars": 13013,
+      "chapter": "II",
+      "topic": "risk_management",
+      "articles": 7
+    },
+    {
+      "file": "luat_ai_chuong3.md",
+      "source": "data/luat_ai_chuong3.md",
+      "chars": 5421,
+      "chapter": "III",
+      "topic": "infrastructure",
+      "articles": 3
+    },
+    {
+      "file": "luat_ai_chuong4.md",
+      "source": "data/luat_ai_chuong4.md",
+      "chars": 11170,
+      "chapter": "IV",
+      "topic": "ecosystem",
+      "articles": 7
+    },
+    {
+      "file": "luat_ai_chuong5.md",
+      "source": "data/luat_ai_chuong5.md",
+      "chars": 2779,
+      "chapter": "V",
+      "topic": "ethics",
+      "articles": 2
+    },
+    {
+      "file": "luat_ai_chuong6.md",
+      "source": "data/luat_ai_chuong6.md",
+      "chars": 2449,
+      "chapter": "VI",
+      "topic": "enforcement",
+      "articles": 2
+    },
+    {
+      "file": "luat_ai_chuong7.md",
+      "source": "data/luat_ai_chuong7.md",
+      "chars": 2440,
+      "chapter": "VII",
+      "topic": "state_management",
+      "articles": 3
+    },
+    {
+      "file": "luat_ai_chuong8.md",
+      "source": "data/luat_ai_chuong8.md",
+      "chars": 1362,
+      "chapter": "VIII",
+      "topic": "effective_date",
+      "articles": 3
+    }
+  ],
+  "baseline": {
+    "luat_ai_chuong1.md": {
+      "fixed_size": {
+        "count": 26,
+        "avg_length": 393.0
+      },
+      "by_sentences": {
+        "count": 28,
+        "avg_length": 364.0
+      },
+      "recursive": {
+        "count": 39,
+        "avg_length": 261.0
+      },
+      "by_article": {
+        "count": 8,
+        "avg_length": 1248.0
+      }
+    },
+    "luat_ai_chuong2.md": {
+      "fixed_size": {
+        "count": 33,
+        "avg_length": 394.3
+      },
+      "by_sentences": {
+        "count": 29,
+        "avg_length": 447.8
+      },
+      "recursive": {
+        "count": 46,
+        "avg_length": 281.9
+      },
+      "by_article": {
+        "count": 7,
+        "avg_length": 1847.7
+      }
+    },
+    "luat_ai_chuong8.md": {
+      "fixed_size": {
+        "count": 4,
+        "avg_length": 340.5
+      },
+      "by_sentences": {
+        "count": 4,
+        "avg_length": 339.5
+      },
+      "recursive": {
+        "count": 4,
+        "avg_length": 339.5
+      },
+      "by_article": {
+        "count": 3,
+        "avg_length": 441.0
+      }
+    }
+  },
+  "total_chunks": 35,
+  "mock": {
+    "embedder": "mock",
+    "chunk_count": 35,
+    "relevant_top3": 5,
+    "queries": [
+      {
+        "id": 1,
+        "query": "Trí tuệ nhân tạo được định nghĩa thế nào trong Luật?",
+        "gold": "Thực hiện bằng điện tử các năng lực trí tuệ con người: học tập, suy luận, nhận thức, phán đoán và hiểu ngôn ngữ tự nhiên.",
+        "expected_article": 3,
+        "filter": {
+          "chapter": "I"
+        },
+        "top1": {
+          "score": 0.0991,
+          "article": 7,
+          "chapter": "I",
+          "source": "data/luat_ai_chuong1.md",
+          "summary": "Điều 7. Các hành vi bị nghiêm cấm",
+          "relevant": false
+        },
+        "top3_relevant": true
+      },
+      {
+        "id": 2,
+        "query": "Hệ thống trí tuệ nhân tạo được phân loại theo những mức độ rủi ro nào?",
+        "gold": "Rủi ro cao, rủi ro trung bình, rủi ro thấp và không đáng kể.",
+        "expected_article": 9,
+        "filter": {
+          "chapter": "II"
+        },
+        "top1": {
+          "score": 0.0845,
+          "article": 15,
+          "chapter": "II",
+          "source": "data/luat_ai_chuong2.md",
+          "summary": "Điều 15. Quản lý hệ thống trí tuệ nhân tạo có rủi ro trung bình và thấp",
+          "relevant": false
+        },
+        "top3_relevant": true
+      },
+      {
+        "id": 3,
+        "query": "Bộ nào là cơ quan đầu mối quản lý trí tuệ nhân tạo?",
+        "gold": "Bộ Khoa học và Công nghệ.",
+        "expected_article": 30,
+        "filter": {
+          "chapter": "VII"
+        },
+        "top1": {
+          "score": 0.1327,
+          "article": 30,
+          "chapter": "VII",
+          "source": "data/luat_ai_chuong7.md",
+          "summary": "Điều 30. Nội dung và trách nhiệm quản lý nhà nước về trí tuệ nhân tạo",
+          "relevant": true
+        },
+        "top3_relevant": true
+      },
+      {
+        "id": 4,
+        "query": "Luật Trí tuệ nhân tạo có hiệu lực từ ngày nào?",
+        "gold": "01 tháng 3 năm 2026.",
+        "expected_article": 34,
+        "filter": {
+          "chapter": "VIII"
+        },
+        "top1": {
+          "score": 0.1708,
+          "article": 34,
+          "chapter": "VIII",
+          "source": "data/luat_ai_chuong8.md",
+          "summary": "Điều 34. Hiệu lực thi hành",
+          "relevant": true
+        },
+        "top3_relevant": true
+      },
+      {
+        "id": 5,
+        "query": "Hệ thống trí tuệ nhân tạo trong lĩnh vực y tế, giáo dục và tài chính có bao lâu để tuân thủ Luật?",
+        "gold": "18 tháng kể từ ngày Luật có hiệu lực thi hành.",
+        "expected_article": 35,
+        "filter": {
+          "chapter": "VIII"
+        },
+        "top1": {
+          "score": 0.0139,
+          "article": 35,
+          "chapter": "VIII",
+          "source": "data/luat_ai_chuong8.md",
+          "summary": "Điều 35. Điều khoản chuyển tiếp",
+          "relevant": true
+        },
+        "top3_relevant": true
+      }
+    ]
+  },
+  "local": {
+    "embedder": "local",
+    "chunk_count": 35,
+    "relevant_top3": 4,
+    "queries": [
+      {
+        "id": 1,
+        "query": "Trí tuệ nhân tạo được định nghĩa thế nào trong Luật?",
+        "gold": "Thực hiện bằng điện tử các năng lực trí tuệ con người: học tập, suy luận, nhận thức, phán đoán và hiểu ngôn ngữ tự nhiên.",
+        "expected_article": 3,
+        "filter": {
+          "chapter": "I"
+        },
+        "top1": {
+          "score": 0.7469,
+          "article": 1,
+          "chapter": "I",
+          "source": "data/luat_ai_chuong1.md",
+          "summary": "Điều 1. Phạm vi điều chỉnh",
+          "relevant": false
+        },
+        "top3_relevant": false
+      },
+      {
+        "id": 2,
+        "query": "Hệ thống trí tuệ nhân tạo được phân loại theo những mức độ rủi ro nào?",
+        "gold": "Rủi ro cao, rủi ro trung bình, rủi ro thấp và không đáng kể.",
+        "expected_article": 9,
+        "filter": {
+          "chapter": "II"
+        },
+        "top1": {
+          "score": 0.6908,
+          "article": 9,
+          "chapter": "II",
+          "source": "data/luat_ai_chuong2.md",
+          "summary": "Điều 9. Phân loại mức độ rủi ro của hệ thống trí tuệ nhân tạo",
+          "relevant": true
+        },
+        "top3_relevant": true
+      },
+      {
+        "id": 3,
+        "query": "Bộ nào là cơ quan đầu mối quản lý trí tuệ nhân tạo?",
+        "gold": "Bộ Khoa học và Công nghệ.",
+        "expected_article": 30,
+        "filter": {
+          "chapter": "VII"
+        },
+        "top1": {
+          "score": 0.6357,
+          "article": 30,
+          "chapter": "VII",
+          "source": "data/luat_ai_chuong7.md",
+          "summary": "Điều 30. Nội dung và trách nhiệm quản lý nhà nước về trí tuệ nhân tạo",
+          "relevant": true
+        },
+        "top3_relevant": true
+      },
+      {
+        "id": 4,
+        "query": "Luật Trí tuệ nhân tạo có hiệu lực từ ngày nào?",
+        "gold": "01 tháng 3 năm 2026.",
+        "expected_article": 34,
+        "filter": {
+          "chapter": "VIII"
+        },
+        "top1": {
+          "score": 0.5888,
+          "article": 34,
+          "chapter": "VIII",
+          "source": "data/luat_ai_chuong8.md",
+          "summary": "Điều 34. Hiệu lực thi hành",
+          "relevant": true
+        },
+        "top3_relevant": true
+      },
+      {
+        "id": 5,
+        "query": "Hệ thống trí tuệ nhân tạo trong lĩnh vực y tế, giáo dục và tài chính có bao lâu để tuân thủ Luật?",
+        "gold": "18 tháng kể từ ngày Luật có hiệu lực thi hành.",
+        "expected_article": 35,
+        "filter": {
+          "chapter": "VIII"
+        },
+        "top1": {
+          "score": 0.7281,
+          "article": 35,
+          "chapter": "VIII",
+          "source": "data/luat_ai_chuong8.md",
+          "summary": "Điều 35. Điều khoản chuyển tiếp",
+          "relevant": true
+        },
+        "top3_relevant": true
+      }
+    ]
+  }
+}

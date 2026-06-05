@@ -129,9 +129,9 @@ def _dot(a: list[float], b: list[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
 
 
-def compute_similarity(vec_a: list[float], vec_b: list[float]) -> float:
-    """
-    Compute cosine similarity between two vectors.
+# def compute_similarity(vec_a: list[float], vec_b: list[float]) -> float:
+#     """
+#     Compute cosine similarity between two vectors.
 
     cosine_similarity = dot(a, b) / (||a|| * ||b||)
 
@@ -145,6 +145,16 @@ def compute_similarity(vec_a: list[float], vec_b: list[float]) -> float:
 
     return _dot(vec_a, vec_b) / (magnitude_a * magnitude_b)
 
+#     Returns 0.0 if either vector has zero magnitude.
+#     """
+#     # TODO: implement cosine similarity formula
+#     raise NotImplementedError("Implement compute_similarity")
+def compute_similarity(vec_a, vec_b):
+    mag_a = math.sqrt(sum(x*x for x in vec_a))
+    mag_b = math.sqrt(sum(x*x for x in vec_b))
+    if mag_a == 0 or mag_b == 0:
+        return 0.0
+    return _dot(vec_a, vec_b) / (mag_a * mag_b)
 
 class ChunkingStrategyComparator:
     """Run all built-in chunking strategies and compare their results."""
